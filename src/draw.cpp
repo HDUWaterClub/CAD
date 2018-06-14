@@ -62,18 +62,31 @@ void drawShape(struct Vertex *startPt, struct Vertex *endPt, int shapeType, colo
 struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, int shapeType) {
     assert(list != NULL && startPt != NULL && endPt != NULL);
 
+    if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
+        return NULL;
+    }
+
     switch (shapeType) {
         case DATATYPE_SEGMENT: {
             struct LinkedNode *res = addNode(list, makeData(makeSegment(startPt, endPt), DATATYPE_SEGMENT));
             return res;
         }
         case DATATYPE_RECTANGLE: {
+            if (abs(startPt -> x - endPt -> x) <= FINDRULE_VARIATION || abs(startPt -> y - endPt -> y) <= FINDRULE_VARIATION) {
+                return NULL;
+            }
+
             struct LinkedNode *res = addNode(list, makeData(makeRectangle(startPt, endPt), DATATYPE_RECTANGLE));
             return res;
         }
         case DATATYPE_CIRCLE: {
             struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
             int radius = sqrt(getSqrEuclideanDistance(centerPt, endPt));
+
+            if (radius <= FINDRULE_VARIATION) {
+                return NULL;
+            }
+
             struct LinkedNode *res = addNode(list, makeData(makeCircle(centerPt, radius), DATATYPE_CIRCLE));
             destroyVertex(startPt);
             destroyVertex(endPt);
@@ -83,6 +96,11 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
             int majorSemiAxis = abs(endPt -> x - centerPt -> x);
             int minorSemiAxis = abs(endPt -> y - centerPt -> y);
+
+            if (majorSemiAxis <= FINDRULE_VARIATION || minorSemiAxis <= FINDRULE_VARIATION) {
+                return NULL;
+            }
+
             struct LinkedNode *res = addNode(list, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE));
             destroyVertex(startPt);
             destroyVertex(endPt);

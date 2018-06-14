@@ -158,16 +158,13 @@ int drawMode(struct LinkedList *list, int shapeType) {
             getRealPosition(startPt);
             struct Vertex *endPt = trackEndPt(list, startPt, shapeType, SHAPE_DEFAULT_COLOR, SHAPE_DEFAULT_COLOR);
 
-            if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
+            struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
+            if (newNode == NULL) {
                 destroyVertex(startPt);
                 destroyVertex(endPt);
-                redrawAll(list, SHAPE_DEFAULT_COLOR);
-            } else {
-                struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
-                redrawAll(list, SHAPE_DEFAULT_COLOR);
-                // return editMode(newNode, cntWorkMode);
             }
-
+            redrawAll(list, SHAPE_DEFAULT_COLOR);
+            // return editMode(list, newNode);
             break;
         }
     }
