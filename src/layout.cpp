@@ -1,0 +1,229 @@
+#include <stdio.h>
+#include <assert.h>
+
+#include "windows.h"
+#include "layout.h"
+
+struct Button btnArr[BUTTON_NUMBER];
+
+int screenWidth, screenHeight;
+int menuWidth, canvasWidth;
+int paddingWidth, paddingHeight;
+
+LOGFONT buttonFont, logoFont;
+
+void getMonitorResolution() {
+    screenWidth = GetSystemMetrics(SM_CXSCREEN);
+    screenHeight = GetSystemMetrics(SM_CYSCREEN);
+}
+
+int getViewPort() {
+    int cntCanvasMinx = -1, cntCanvasMiny = -1, cntCanvasMaxx = -1, cntCanvasMaxy = -1;
+    getviewport(&cntCanvasMinx, &cntCanvasMaxy, &cntCanvasMaxx, &cntCanvasMiny);
+    assert(cntCanvasMinx >= 0 && cntCanvasMiny >= 0 && cntCanvasMaxx >= 0 && cntCanvasMaxy >= 0);
+
+    return cntCanvasMinx > 0 ? AREA_CANVAS : AREA_MENU;
+}
+
+void setViewPort(int areaId) {
+    if (getViewPort() == areaId) {
+        return;
+    }
+    switch (areaId) {
+        case AREA_MENU: {
+            setviewport(0, 0, menuWidth, screenHeight, true);
+            break;
+        }
+        case AREA_CANVAS: {
+            setviewport(menuWidth + 1, 0, screenWidth, screenHeight, true);
+            break;
+        }
+        default: {
+            setviewport(0, 0, screenWidth, screenHeight);
+            break;
+        }
+    }
+}
+
+void clearCanvas() {
+    setViewPort(AREA_CANVAS);
+    color_t canvasColor = getbkcolor();
+    fillBlock(0, 0, canvasWidth, screenHeight, canvasColor);
+}
+
+bool isInRec(int x, int y, int x1, int y1, int x2, int y2) {
+    int minx = min(x1, x2), miny = min(y1, y2);
+    int maxx = max(x1, x2), maxy = max(y1, y2);
+
+    return x >= minx && x <= maxx && y >= miny && y <= maxy;
+}
+
+int whichArea(int x) {
+    return x <= menuWidth ? AREA_MENU : AREA_CANVAS;
+}
+
+int getButtonId(int x, int y) {
+    for (int i = 0; i < BUTTON_NUMBER; i++) {
+        if (isInRec(x, y, btnArr[i].minx, btnArr[i].miny,
+            btnArr[i].minx + btnArr[i].width, btnArr[i].miny + btnArr[i].height)) {
+                return i;
+        }
+    }
+    return BUTTON_NON_CHANGED;
+}
+
+void drawButton(int buttonId, bool state) {
+    assert(buttonId >= 0 && buttonId < BUTTON_NUMBER);
+
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_MENU);
+
+    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
+
+    color_t textColor = BUTTON_FOREGROUND_COLOR_INACTIVE, fillColor = BUTTON_FILL_COLOR_INACTIVE;
+    if (state == BUTTON_STATE_ACTIVE) {
+        textColor = BUTTON_FOREGROUND_COLOR_ACTIVE;
+        fillColor = BUTTON_FILL_COLOR_ACTIVE;
+    }
+    setcolor(textColor);
+    setfillcolor(fillColor);
+    setfontbkcolor(fillColor);
+
+    setfont(&buttonFont);
+    int cntTextHeight = textheight(btnArr[buttonId].text);
+    int cntTextWidth = textwidth(btnArr[buttonId].text);
+    if (cntTextHeight & 1) {
+        cntTextHeight++;
+    }
+    if (cntTextWidth & 1) {
+        cntTextWidth++;
+    }
+
+    int cntTextPaddingHeight = (btnArr[buttonId].height - cntTextHeight) / 2;
+    // int cntTextPaddingWidth = (btnArr[buttonId].width - cntTextWidth) / 2;
+
+    // rectangle(btnArr[buttonId].minx, btnArr[buttonId].miny + btnArr[buttonId].height, btnArr[buttonId].minx + btnArr[buttonId].width, btnArr[buttonId].miny);
+    bar(btnArr[buttonId].minx, btnArr[buttonId].miny + btnArr[buttonId].height, btnArr[buttonId].minx + btnArr[buttonId].width, btnArr[buttonId].miny);
+    outtextrect(btnArr[buttonId].minx + paddingWidth, btnArr[buttonId].miny + cntTextPaddingHeight, cntTextWidth, cntTextHeight, btnArr[buttonId].text);
+
+    setcolor(prevColor);
+    setfillcolor(prevFillColor);
+    setViewPort(prevViewPort);
+}
+
+void changeButtonText(int buttonId, char text[BUTTON_TEXT_LENGTH]) {
+    assert(buttonId >= 0 && buttonId < BUTTON_NUMBER && text != NULL);
+    strncpy(btnArr[buttonId].text, text, sizeof(btnArr[buttonId].text));
+}
+
+void drawLogo(int minx, int miny, color_t fillColor, color_t textColor) {
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_MENU);
+
+    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
+
+    setcolor(textColor);
+    setfillcolor(fillColor);
+    setfontbkcolor(fillColor);
+
+    setfont(&logoFont);
+    outtextxy(minx, miny, "CADET");
+
+    setcolor(prevColor);
+    setfillcolor(prevFillColor);
+
+    setViewPort(prevViewPort);
+}
+
+void drawMenu() {
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_MENU);
+
+    fillBlock(0, 0, menuWidth, screenHeight, MENU_BACKGROUND_COLOR);
+
+    int buttonWidth = menuWidth - (paddingWidth << 1);
+    int buttonHeight = screenHeight / 10 - (paddingHeight << 1);
+    if (buttonWidth & 1) {
+        buttonWidth++;
+    }
+    if (buttonHeight & 1) {
+        buttonHeight++;
+    }
+
+    int logoFontHeight = screenHeight / 10 - (paddingHeight << 1);
+    int logoFontWidth =  logoFontHeight * 21 / 50;
+    if (logoFontWidth & 1) {
+        logoFontWidth--;
+    }
+    if (logoFontHeight & 1) {
+        logoFontHeight--;
+    }
+
+    logoFont.lfWidth = logoFontWidth;
+    logoFont.lfHeight = logoFontHeight;
+    logoFont.lfWeight = FW_DEMIBOLD;
+    logoFont.lfQuality = PROOF_QUALITY;
+
+    drawLogo(paddingWidth, screenHeight / 10, BUTTON_FILL_COLOR_INACTIVE, BUTTON_FOREGROUND_COLOR_INACTIVE);
+
+    int buttonFontHeight = buttonHeight - (paddingHeight * 3 / 2);
+    int buttonFontWidth = buttonFontHeight * 21 / 50;
+    if (buttonFontWidth & 1) {
+        buttonFontWidth--;
+    }
+    if (buttonFontHeight & 1) {
+        buttonFontHeight--;
+    }
+
+    buttonFont.lfWidth = buttonFontWidth;
+    buttonFont.lfHeight = buttonFontHeight;
+    buttonFont.lfWeight = FW_MEDIUM;
+    buttonFont.lfQuality = PROOF_QUALITY;
+
+    snprintf(btnArr[0].text, sizeof(btnArr[0].text), "SEGMENT");
+    snprintf(btnArr[1].text, sizeof(btnArr[1].text), "RECTANGLE");
+    snprintf(btnArr[2].text, sizeof(btnArr[2].text), "CIRCLE");
+    snprintf(btnArr[3].text, sizeof(btnArr[3].text), "ELLIPSE");
+    snprintf(btnArr[4].text, sizeof(btnArr[4].text), "TEXT");
+    snprintf(btnArr[5].text, sizeof(btnArr[5].text), "CLEAR");
+    snprintf(btnArr[6].text, sizeof(btnArr[6].text), "EXIT");
+
+    for (int i = 0; i < BUTTON_NUMBER; i++) {
+        btnArr[i].minx = paddingWidth;
+        btnArr[i].miny = screenHeight * (i + 2) / 10 + paddingHeight;
+        btnArr[i].width = buttonWidth;
+        btnArr[i].height = buttonHeight;
+        drawButton(i, BUTTON_STATE_INACTIVE);
+    }
+
+    setViewPort(prevViewPort);
+}
+
+void init() {
+    getMonitorResolution();
+    if (screenWidth < SCREEN_MIN_WIDTH || screenHeight < SCREEN_MIN_HEIGHT) {
+        puts("Unsupported screen resolution");
+        exit(1);
+    }
+    setinitmode(INIT_NOBORDER + INIT_TOPMOST, 0, 0);
+    initgraph(screenWidth, screenHeight);
+
+     // Boring calculations
+    menuWidth = screenWidth / 4;
+    menuWidth = min(menuWidth, MENU_MAX_WIDTH);
+    menuWidth = max(menuWidth, MENU_MIN_WIDTH);
+    if (menuWidth & 1) {
+        if (screenWidth & 3) {
+            menuWidth++;
+        } else {
+            menuWidth--;
+        }
+    }
+    canvasWidth = screenWidth - menuWidth;
+    paddingWidth = menuWidth / 10, paddingHeight = screenHeight / 50;
+
+    drawMenu();
+
+    // Set viewport to canvas
+    setViewPort(AREA_CANVAS);
+}
