@@ -81,6 +81,52 @@ struct LinkedNode * findNode(struct LinkedList *list, const void *findData,
     return NULL;
 }
 
+void moveToHead(struct LinkedList *list, struct LinkedNode *node) {
+    assert(list != NULL && node != NULL);
+    errno = 0;
+
+    if (node -> prev == NULL) {
+        return;
+    }
+
+    // Remove node form its current position
+    node -> prev -> next = node -> next;
+    if (node -> next == NULL) {
+        list -> tail = node -> prev;
+    } else {
+        node -> next -> prev = node -> prev;
+    }
+
+    // Insert node to head
+    node -> next = list -> head;
+    node -> prev = NULL;
+    list -> head -> prev = node;
+    list -> head = node;
+}
+
+void moveToTail(struct LinkedList *list, struct LinkedNode *node) {
+    assert(list != NULL && node != NULL);
+    errno = 0;
+
+    if (node -> next == NULL) {
+        return;
+    }
+
+     // Remove node form its current position
+    node -> next -> prev = node -> prev;
+    if (node -> prev == NULL) {
+        list -> head = node -> next;
+    } else {
+        node -> prev -> next = node -> next;
+    }
+
+    // Insert node to tail
+    node -> prev = list -> tail;
+    node -> next = NULL;
+    list -> tail -> next = node;
+    list -> tail = node;
+}
+
 // Complexity: O(1)
 void deleteNode(struct LinkedList *list, struct LinkedNode *node,
                 void (*destroyDataFunc)(struct NodeData *)) {

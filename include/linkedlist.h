@@ -38,14 +38,22 @@ struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData);
 // Returns nothing
 void editNode(struct LinkedNode *node, struct NodeData *newData);
 
-// Find LinkNode using given function
-// Returns LinkNode pointer
-struct LinkedNode * findNode(struct LinkedList *list, const void *findData, 
+// Find LinkedNode using given function
+// Returns LinkedNode pointer
+struct LinkedNode * findNode(struct LinkedList *list, const void *findData,
                             bool (*checkFunc)(const void *, const struct LinkedNode *));
+
+// Move LinkedNode to list head
+// Returns nothing
+void moveToHead(struct LinkedList *list, struct LinkedNode *node);
+
+// Move LinkedNode to list tail
+// Returns nothing
+void moveToTail(struct LinkedList *list, struct LinkedNode *node);
 
 // Delete a segment
 // Returns nothing
-void deleteNode(struct LinkedList *list, struct LinkedNode *node, 
+void deleteNode(struct LinkedList *list, struct LinkedNode *node,
                 void (*destroyDataFunc)(struct NodeData *));
 
 #endif

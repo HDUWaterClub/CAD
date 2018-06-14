@@ -227,3 +227,71 @@ void init() {
     // Set viewport to canvas
     setViewPort(AREA_CANVAS);
 }
+
+
+void drawEditAssist(struct NodeData *nodeData) {
+    assert(nodeData != NULL);
+    color_t prevFillColor = getfillcolor();
+    setfillcolor(EDIT_ASSIST_COLOR);
+
+    int editAssitNum = 0;
+    struct Vertex editAssitArr[EDIT_ASSIST_MAX_NUM];
+
+    int minx, miny, maxx, maxy;
+    switch (nodeData -> type) {
+        case DATATYPE_SEGMENT: {
+            struct Segment *seg = (struct Segment *)nodeData -> content;
+            minx = seg -> leftPt -> x, miny = seg -> leftPt -> y;
+            maxx = seg -> rightPt -> x, maxy = seg -> rightPt -> y;
+            editAssitNum = 2;
+            break;
+        }
+        case DATATYPE_RECTANGLE: {
+            struct Rectangle *rec = (struct Rectangle *)nodeData -> content;
+            minx = rec -> lowerLeftPt -> x, miny = rec -> lowerLeftPt -> y;
+            maxx = rec -> upperRightPt -> x, maxy = rec -> upperRightPt -> y;
+            editAssitNum = 8;
+            break;
+        }
+        case DATATYPE_CIRCLE: {
+            struct Circle *cir = (struct Circle *)nodeData -> content;
+            minx = cir -> centerPt -> x - cir -> radius, miny = cir -> centerPt -> y - cir -> radius;
+            maxx = cir -> centerPt -> x + cir -> radius, maxy = cir -> centerPt -> y + cir -> radius;
+            editAssitNum = 4;
+            break;
+        }
+        case DATATYPE_ELLIPSE: {
+            struct Ellipse * elp = (struct Ellipse *)nodeData -> content;
+            minx = elp -> centerPt -> x - elp -> majorSemiAxis, miny = elp -> centerPt -> y - elp -> minorSemiAxis;
+            maxx = elp -> centerPt -> x + elp -> majorSemiAxis, maxy = elp -> centerPt -> y + elp -> minorSemiAxis;
+            editAssitNum = 8;
+            break;
+        }
+        case DATATYPE_TEXT: {
+            struct Text *txt = (struct Text *)nodeData -> content;
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+
+    editAssitArr[0].x = minx, editAssitArr[0].y = miny;
+    editAssitArr[1].x = maxx, editAssitArr[1].y = maxy;
+    if (editAssitNum > 2) {
+        editAssitArr[2].x = minx, editAssitArr[2].y = maxy;
+        editAssitArr[3].x = maxx, editAssitArr[3].y = miny;
+    }
+    if (editAssitNum > 4) {
+        editAssitArr[4].x = (minx + maxx) / 2, editAssitArr[4].y = miny;
+        editAssitArr[5].x = (minx + maxx) / 2, editAssitArr[5].y = maxy;
+        editAssitArr[6].x = minx, editAssitArr[6].y = (miny + maxy) / 2;
+        editAssitArr[7].x = maxx, editAssitArr[7].y = (miny + maxy) / 2;
+    }
+
+    for (int i = 0; i < editAssitNum; i++) {
+        fillellipse(editAssitArr[i].x, editAssitArr[i].y, EDIT_ASSIST_RADIUS, EDIT_ASSIST_RADIUS);
+    }
+
+    setfillcolor(prevFillColor);
+}

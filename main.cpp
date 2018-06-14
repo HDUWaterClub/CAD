@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <errno.h>
 
 #include "graphics.h"
@@ -14,7 +15,97 @@
 
 int cntButtonId;
 
+int editMode(struct LinkedList *list, struct LinkedNode *node) {
+    assert(node != NULL);
+
+    changeButtonText(BUTTON_TYPE_CLEAR, "DELETE");
+    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
+
+    bool shouldReturn = false;
+    int returnVal = BUTTON_NON_ACTIVE;
+
+    while (true) {
+        drawNodeData(node -> data, EDIT_ASSIST_COLOR);
+        drawEditAssist(node -> data);
+
+        while (true) {
+            mouse_msg m = getmouse();
+
+            if (!m.is_down()) {
+                continue;
+            }
+
+            int cntArea = whichArea(m.x);
+            if (cntArea == AREA_MENU) {
+                // When user clicked left button in menu area,
+                // decide about changing work mode
+                int nextButtonId = getButtonId(m.x, m.y);
+                if (nextButtonId == BUTTON_TYPE_CLEAR) {
+                    deleteNode(list, node, destroyRule);
+                    returnVal = BUTTON_NON_ACTIVE;
+                    shouldReturn = true;
+                    break;
+                } else if (nextButtonId != BUTTON_NON_CHANGED) {
+                    returnVal = nextButtonId;
+                    shouldReturn = true;
+                    break;
+                }
+            } else if (cntArea == AREA_CANVAS) {
+                if (m.is_move()) {
+                    while (true) {
+
+                    }
+                }
+
+                struct Vertex *cursorPt = makeVertex(m.x, m.y);
+                getRealPosition(cursorPt);
+                bool isInShape = findRule(cursorPt, node);
+                destroyVertex(cursorPt);
+
+                if (isInShape) {
+                    if (m.is_left()) {
+
+                    } else if (m.is_right()) {
+                        // Move current shape to list head
+                        moveToHead(list, node);
+                        returnVal = BUTTON_NON_ACTIVE;
+                        shouldReturn = true;
+                        break;
+                    }
+                } else {
+                    if (m.is_left()) {
+                        struct Vertex *cursorPt = makeVertex(m.x, m.y);
+                        getRealPosition(cursorPt);
+                        struct LinkedNode *nextNode = findNode(list, cursorPt, findRule);
+                        destroyVertex(cursorPt);
+
+                        if (nextNode == NULL) {
+                            returnVal = BUTTON_NON_ACTIVE;
+                            shouldReturn = true;
+                            break;
+                        } else {
+                            node = nextNode;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        redrawAll(list, SHAPE_DEFAULT_COLOR);
+
+        if (shouldReturn) {
+            break;
+        }
+    }
+
+    changeButtonText(BUTTON_TYPE_CLEAR, "CLEAR");
+    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
+    return returnVal;
+}
+
 int selectionMode(struct LinkedList *list) {
+    assert(list != NULL);
     while (true) {
         mouse_msg m = getmouse();
         if (m.is_left() && m.is_down()) {
@@ -35,11 +126,8 @@ int selectionMode(struct LinkedList *list) {
                 destroyVertex(cursorPt);
 
                 if (node != NULL) {
-                    changeButtonText(BUTTON_TYPE_CLEAR, "DELETE");
-                    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
-                    drawNodeData(node -> data, EDIT_ASSIST_COLOR);
                     // Edit selected element
-                    // return editMode(node, WORKMODE_SELECTION);
+                    return editMode(list, node);
                 }
             }
         }
@@ -48,6 +136,7 @@ int selectionMode(struct LinkedList *list) {
 }
 
 int drawMode(struct LinkedList *list, int shapeType) {
+    assert(list != NULL);
     while (true) {
         mouse_msg m = getmouse();
         // Only left key clicking down matters

@@ -37,7 +37,9 @@
 #define MENU_MAX_WIDTH 360
 #define MENU_BACKGROUND_COLOR EGERGB(56, 56, 56)
 
-#define EDIT_ASSIST_COLOR EGERGB(192, 192, 192)
+#define EDIT_ASSIST_MAX_NUM 8
+#define EDIT_ASSIST_COLOR EGERGB(169, 169, 169)
+#define EDIT_ASSIST_RADIUS 5
 
 struct Button {
     int minx, miny, width, height;
@@ -60,5 +62,7 @@ void drawButton(int buttonId, bool state);
 void changeButtonText(int buttonId, char *text);
 
 void init();
+
+void drawEditAssist(struct NodeData *nodeData);
 
 #endif

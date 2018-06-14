@@ -176,12 +176,13 @@ void destroyEllipse(struct Ellipse *elp) {
 bool findEllipseRule(const struct Vertex *cursorPt, const struct Ellipse *elp) {
     assert(cursorPt != NULL && elp != NULL);
     // Prevent possible overflow
-    if (((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION) * cursorPt -> x <= 1e9 &&
-        ((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * cursorPt -> y <= 1e9 &&
+    if (((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION) * (cursorPt -> x - elp -> centerPt -> x) <= 1e9 &&
+        ((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * (cursorPt -> y - elp -> centerPt -> y) <= 1e9 &&
         ((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * ((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION) <= 1e9) {
-            return quickPow(((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION) * cursorPt -> x, 2) + quickPow(((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * cursorPt -> y, 2) <= quickPow(((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * ((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION), 2);
+            return quickPow(((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION) * (cursorPt -> x - elp -> centerPt -> x), 2) + quickPow(((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) * (cursorPt -> y - elp -> centerPt -> y), 2) <= quickPow(((long long int)elp -> majorSemiAxis + FINDRULE_VARIATION) *
+((long long int)elp -> minorSemiAxis + FINDRULE_VARIATION), 2);
     } else {
-        return (long double)quickPow(cursorPt -> x, 2) / quickPow(elp -> majorSemiAxis, 2) + (long double)quickPow(cursorPt -> y, 2) / quickPow(elp -> minorSemiAxis, 2) <= 1.0;
+        return (long double)quickPow((cursorPt -> x - elp -> centerPt -> x), 2) / quickPow(elp -> majorSemiAxis, 2) + (long double)quickPow((cursorPt -> y - elp -> centerPt -> y), 2) / quickPow(elp -> minorSemiAxis, 2) <= 1.0;
     }
 }
 
