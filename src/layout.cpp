@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <limits.h>
 #include <assert.h>
 
 #include "windows.h"
+
+#include "distance.h"
 #include "layout.h"
 
 struct Button btnArr[BUTTON_NUMBER];
@@ -311,13 +314,15 @@ void drawEditAssist(struct NodeData *nodeData) {
             fillellipse(cntx, cnty, EDIT_ASSIST_RADIUS, EDIT_ASSIST_RADIUS);
         }
     }
+
+    setcolor(prevFillColor);
 }
 
 void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
     assert(data != NULL);
 
     int xType = assistId / 3, yType = assistId % 3;
-    int startPtx = -1, startPty = -1;
+    int startPtx, startPty;
     int endPtx = editAssistArr[assistId].x, endPty = editAssistArr[assistId].y;
 
     switch (data -> type) {
@@ -329,22 +334,50 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
                 startPty = seg -> rightPt -> y;
             } else {
                 startPtx = seg -> leftPt -> x;
-                startPty = seg -> leftPt -> x;
+                startPty = seg -> leftPt -> y;
             }
             break;
         }
         case DATATYPE_RECTANGLE: {
             struct Rectangle *rec = (struct Rectangle *)data -> content;
 
+            if (xType == 0) {
+                startPtx = rec -> upperRightPt -> x;
+            } else {
+                startPtx = rec -> lowerLeftPt -> x;
+            }
+            if (yType == 0) {
+                startPty = rec -> upperRightPt -> y;
+            } else {
+                startPty = rec -> lowerLeftPt -> y;
+            }
             break;
         }
         case DATATYPE_CIRCLE: {
             struct Circle *cir = (struct Circle *)data -> content;
 
+            if (xType == 0) {
+                startPtx = cir -> centerPt -> x + cir -> radius;
+            } else {
+                startPtx = cir -> centerPt -> x - cir -> radius;
+            }
+            startPty = cir -> centerPt -> y;
+            endPty = cir -> centerPt -> y;
             break;
         }
         case DATATYPE_ELLIPSE: {
             struct Ellipse *elp = (struct Ellipse *)data -> content;
+
+            if (xType == 0) {
+                startPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
+            } else {
+                startPtx = elp -> centerPt -> x - elp -> majorSemiAxis;
+            }
+            if (yType == 0) {
+                startPty = elp -> centerPt -> y + elp -> minorSemiAxis;
+            } else {
+                startPty = elp -> centerPt -> y - elp -> minorSemiAxis;
+            }
 
             break;
         }
@@ -353,8 +386,20 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
         }
     }
 
-    // assert(startPtx >= 0 && startPty >= 0 && endPtx >= 0 && endPty >= 0);
-
     *startPt = makeVertex(startPtx, startPty);
     *endPt = makeVertex(endPtx, endPty);
+}
+
+int getAssistId(struct Vertex *cursorPt) {
+    int assistId = -1, minManhattanDistance = INT_MAX;
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
+            int cntManhattanDistance = getManhattanDistance(cursorPt, &editAssistArr[i]);
+            if (cntManhattanDistance <= FINDRULE_VARIATION && cntManhattanDistance <= minManhattanDistance) {
+                minManhattanDistance = cntManhattanDistance;
+                assistId = i;
+            }
+        }
+    }
+    return assistId;
 }

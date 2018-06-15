@@ -15,13 +15,27 @@
 
 int cntButtonId;
 
+void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my) {
+    struct Vertex *cursorPt = makeVertex(mx, my);
+    getRealPosition(cursorPt);
+    struct Vertex *startPt = NULL, *endPt = NULL;
+    trackShape(list, node -> data, cursorPt, &startPt, &endPt);
+    destroyVertex(cursorPt);
+
+    if (startPt != NULL && endPt != NULL) {
+        editShape(node, startPt, endPt);
+    }
+
+    redrawAll(list, SHAPE_DEFAULT_COLOR);
+}
+
 int editMode(struct LinkedList *list, struct LinkedNode *node) {
     assert(node != NULL && node -> data != NULL);
 
     changeButtonText(BUTTON_TYPE_CLEAR, "DELETE");
     drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
 
-    bool shouldReturn = false;
+    bool shouldReturn = false, isFirst = true;
     int returnVal = BUTTON_NON_ACTIVE;
 
     while (true) {
@@ -31,8 +45,17 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
         while (true) {
             mouse_msg m = getmouse();
 
+            if (m.is_up()) {
+                isFirst = false;
+                continue;
+            }
+
             int cntArea = whichArea(m.x);
-            if (cntArea == AREA_MENU && m.is_down()) {
+            if (isFirst && m.is_move()) {
+                moveShape(list, node, m.x, m.y);
+                isFirst = false;
+                break;
+            } else if (cntArea == AREA_MENU && m.is_down()) {
                 // When user clicked left button in menu area,
                 // decide about changing work mode
                 int nextButtonId = getButtonId(m.x, m.y);
@@ -47,38 +70,7 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                     break;
                 }
             } else if (cntArea == AREA_CANVAS) {
-                if (m.is_move()) {
-                    struct Vertex *startPt = NULL, *endPt = NULL;
-                    getStartEndPts(node -> data, &startPt, &endPt);
-                    assert(startPt != NULL && endPt != NULL);
-                    int prevx = m.x, prevy = m.y;
-
-                    while (true) {
-                        mouse_msg m = getmouse();
-                        int deltax = m.x - prevx, deltay = m.y - prevy;
-                        prevx = m.x;
-                        prevy = m.y;
-
-                        startPt -> x += deltax;
-                        startPt-> y += deltay;
-                        endPt -> x += deltax;
-                        endPt-> y += deltay;
-
-                        redrawAll(list, SHAPE_DEFAULT_COLOR);
-                        drawNodeData(node -> data, EDIT_ASSIST_COLOR);
-                        drawShape(startPt, endPt, node -> data -> type, SHAPE_DEFAULT_COLOR);
-
-                        if (m.is_up()) {
-                            editShape(node, startPt, endPt);
-                            redrawAll(list, SHAPE_DEFAULT_COLOR);
-                            break;
-                        }
-                    }
-
-                    returnVal = BUTTON_NON_ACTIVE;
-                    shouldReturn = true;
-                    break;
-                } else if (m.is_down()) {
+                if (m.is_down()) {
                     struct Vertex *cursorPt = makeVertex(m.x, m.y);
                     getRealPosition(cursorPt);
                     bool isInShape = findRule(cursorPt, node);
@@ -86,12 +78,20 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
 
                     if (isInShape) {
                         if (m.is_left()) {
+                            struct Vertex *cursorPt = makeVertex(m.x, m.y);
+                            getRealPosition(cursorPt);
+                            int assistId = getAssistId(cursorPt);
+                            destroyVertex(cursorPt);
 
+                            if (assistId == -1) {
+                                moveShape(list, node, m.x, m.y);
+                                break;
+                            } else {
+
+                            }
                         } else if (m.is_right()) {
                             // Move current shape to list head
                             moveToHead(list, node);
-                            returnVal = BUTTON_NON_ACTIVE;
-                            shouldReturn = true;
                             break;
                         }
                     } else {
@@ -116,7 +116,6 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
         }
 
         redrawAll(list, SHAPE_DEFAULT_COLOR);
-
         if (shouldReturn) {
             break;
         }
@@ -181,10 +180,11 @@ int drawMode(struct LinkedList *list, int shapeType) {
             getRealPosition(startPt);
             struct Vertex *endPt = trackEndPt(list, startPt, shapeType, SHAPE_DEFAULT_COLOR, SHAPE_DEFAULT_COLOR);
 
-            struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
+            //struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
+            saveShape(list, startPt, endPt, shapeType);
             redrawAll(list, SHAPE_DEFAULT_COLOR);
-            // return editMode(list, newNode);
             break;
+            //return editMode(list, newNode);
         }
     }
     return cntButtonId;

@@ -99,7 +99,7 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             struct LinkedNode *res = addNode(list, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE));
             destroyVertex(startPt);
             destroyVertex(endPt);
-            return NULL;
+            return res;
         }
         case DATATYPE_TEXT: {
             break;
@@ -230,4 +230,46 @@ struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
             return cntEndPt;
         }
     }
+}
+
+void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *cursorPt,
+                struct Vertex **startPt, struct Vertex **endPt) {
+    assert(list != NULL && data != NULL && cursorPt != NULL);
+
+    struct Vertex *cntStartPt = NULL, *cntEndPt = NULL;
+    getStartEndPts(data, &cntStartPt, &cntEndPt);
+
+    while (true) {
+        mouse_msg m = getmouse();
+
+        if (whichArea(m.x) == AREA_MENU) {
+            destroyVertex(cntStartPt);
+            destroyVertex(cntEndPt);
+            break;
+        }
+
+        int prevx = cursorPt -> x, prevy = cursorPt -> y;
+        cursorPt -> x = m.x;
+        cursorPt -> y = m.y;
+        getRealPosition(cursorPt);
+        int deltax = cursorPt -> x - prevx, deltay = cursorPt -> y - prevy;
+
+        cntStartPt -> x += deltax;
+        cntStartPt-> y += deltay;
+        cntEndPt -> x += deltax;
+        cntEndPt-> y += deltay;
+
+        redrawAll(list, SHAPE_DEFAULT_COLOR);
+        drawNodeData(data, EDIT_ASSIST_COLOR);
+        drawShape(cntStartPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+
+        if (m.is_up()) {
+            *startPt = cntStartPt;
+            *endPt = cntEndPt;
+            return;
+        }
+    }
+
+    startPt = NULL;
+    endPt = NULL;
 }

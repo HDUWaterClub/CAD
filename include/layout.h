@@ -70,4 +70,6 @@ void init();
 void drawEditAssist(struct NodeData *nodeData);
 void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = 0);
 
+int getAssistId(struct Vertex *cursorPt);
+
 #endif
