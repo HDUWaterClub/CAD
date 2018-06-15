@@ -6,6 +6,8 @@
 
 struct Button btnArr[BUTTON_NUMBER];
 
+struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
+
 int screenWidth, screenHeight;
 int menuWidth, canvasWidth;
 int paddingWidth, paddingHeight;
@@ -205,7 +207,7 @@ void init() {
         puts("Unsupported screen resolution");
         exit(1);
     }
-    setinitmode(INIT_NOBORDER + INIT_TOPMOST, 0, 0);
+    setinitmode(INIT_NOBORDER, 0, 0);
     initgraph(screenWidth, screenHeight);
 
      // Boring calculations
@@ -228,43 +230,44 @@ void init() {
     setViewPort(AREA_CANVAS);
 }
 
-
 void drawEditAssist(struct NodeData *nodeData) {
     assert(nodeData != NULL);
     color_t prevFillColor = getfillcolor();
     setfillcolor(EDIT_ASSIST_COLOR);
 
-    int editAssitNum = 0;
-    struct Vertex editAssitArr[EDIT_ASSIST_MAX_NUM];
-
     int minx, miny, maxx, maxy;
+    bool noMid = false, onlySame = false;
     switch (nodeData -> type) {
         case DATATYPE_SEGMENT: {
             struct Segment *seg = (struct Segment *)nodeData -> content;
             minx = seg -> leftPt -> x, miny = seg -> leftPt -> y;
             maxx = seg -> rightPt -> x, maxy = seg -> rightPt -> y;
-            editAssitNum = 2;
+            noMid = true;
+            onlySame = true;
             break;
         }
         case DATATYPE_RECTANGLE: {
             struct Rectangle *rec = (struct Rectangle *)nodeData -> content;
             minx = rec -> lowerLeftPt -> x, miny = rec -> lowerLeftPt -> y;
             maxx = rec -> upperRightPt -> x, maxy = rec -> upperRightPt -> y;
-            editAssitNum = 8;
+            noMid = false;
+            onlySame = false;
             break;
         }
         case DATATYPE_CIRCLE: {
             struct Circle *cir = (struct Circle *)nodeData -> content;
             minx = cir -> centerPt -> x - cir -> radius, miny = cir -> centerPt -> y - cir -> radius;
             maxx = cir -> centerPt -> x + cir -> radius, maxy = cir -> centerPt -> y + cir -> radius;
-            editAssitNum = 4;
+            noMid = true;
+            onlySame = false;
             break;
         }
         case DATATYPE_ELLIPSE: {
             struct Ellipse * elp = (struct Ellipse *)nodeData -> content;
             minx = elp -> centerPt -> x - elp -> majorSemiAxis, miny = elp -> centerPt -> y - elp -> minorSemiAxis;
             maxx = elp -> centerPt -> x + elp -> majorSemiAxis, maxy = elp -> centerPt -> y + elp -> minorSemiAxis;
-            editAssitNum = 8;
+            noMid = false;
+            onlySame = false;
             break;
         }
         case DATATYPE_TEXT: {
@@ -276,22 +279,82 @@ void drawEditAssist(struct NodeData *nodeData) {
         }
     }
 
-    editAssitArr[0].x = minx, editAssitArr[0].y = miny;
-    editAssitArr[1].x = maxx, editAssitArr[1].y = maxy;
-    if (editAssitNum > 2) {
-        editAssitArr[2].x = minx, editAssitArr[2].y = maxy;
-        editAssitArr[3].x = maxx, editAssitArr[3].y = miny;
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        int xType = i / 3, yType = i % 3;
+        int cntx, cnty;
+
+        if (xType == 0) {
+            cntx = minx;
+        } else if (xType == 1) {
+            cntx = maxx;
+        } else if (!noMid) {
+            cntx = (minx + maxx) / 2;
+        }
+
+        if (yType == 0) {
+            cnty = miny;
+        } else if (yType == 1) {
+            cnty = maxy;
+        } else if (!noMid) {
+            cnty = (miny + maxy) / 2;
+        }
+
+        if (onlySame && (xType != yType)) {
+            cntx = -1;
+            cnty = -1;
+        }
+
+        editAssistArr[i].x = cntx;
+        editAssistArr[i].y = cnty;
+
+        if (cntx >= 0 && cnty >= 0) {
+            fillellipse(cntx, cnty, EDIT_ASSIST_RADIUS, EDIT_ASSIST_RADIUS);
+        }
     }
-    if (editAssitNum > 4) {
-        editAssitArr[4].x = (minx + maxx) / 2, editAssitArr[4].y = miny;
-        editAssitArr[5].x = (minx + maxx) / 2, editAssitArr[5].y = maxy;
-        editAssitArr[6].x = minx, editAssitArr[6].y = (miny + maxy) / 2;
-        editAssitArr[7].x = maxx, editAssitArr[7].y = (miny + maxy) / 2;
+}
+
+void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
+    assert(data != NULL);
+
+    int xType = assistId / 3, yType = assistId % 3;
+    int startPtx = -1, startPty = -1;
+    int endPtx = editAssistArr[assistId].x, endPty = editAssistArr[assistId].y;
+
+    switch (data -> type) {
+        case DATATYPE_SEGMENT: {
+            struct Segment *seg = (struct Segment *)data -> content;
+            assert(assistId == 0 || assistId == 4);
+            if (xType == 0) {
+                startPtx = seg -> rightPt -> x;
+                startPty = seg -> rightPt -> y;
+            } else {
+                startPtx = seg -> leftPt -> x;
+                startPty = seg -> leftPt -> x;
+            }
+            break;
+        }
+        case DATATYPE_RECTANGLE: {
+            struct Rectangle *rec = (struct Rectangle *)data -> content;
+
+            break;
+        }
+        case DATATYPE_CIRCLE: {
+            struct Circle *cir = (struct Circle *)data -> content;
+
+            break;
+        }
+        case DATATYPE_ELLIPSE: {
+            struct Ellipse *elp = (struct Ellipse *)data -> content;
+
+            break;
+        }
+        default: {
+            break;
+        }
     }
 
-    for (int i = 0; i < editAssitNum; i++) {
-        fillellipse(editAssitArr[i].x, editAssitArr[i].y, EDIT_ASSIST_RADIUS, EDIT_ASSIST_RADIUS);
-    }
+    // assert(startPtx >= 0 && startPty >= 0 && endPtx >= 0 && endPty >= 0);
 
-    setfillcolor(prevFillColor);
+    *startPt = makeVertex(startPtx, startPty);
+    *endPt = makeVertex(endPtx, endPty);
 }

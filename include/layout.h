@@ -41,6 +41,9 @@
 #define EDIT_ASSIST_COLOR EGERGB(169, 169, 169)
 #define EDIT_ASSIST_RADIUS 5
 
+#define EDIT_ASSIST_MAX_NUM 8
+
+
 struct Button {
     int minx, miny, width, height;
     char text[BUTTON_TEXT_LENGTH];
@@ -48,6 +51,7 @@ struct Button {
 
 extern int screenWidth, screenHeight;
 extern int menuWidth, canvasWidth;
+extern struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
 
 void clearCanvas();
 
@@ -64,5 +68,6 @@ void changeButtonText(int buttonId, char *text);
 void init();
 
 void drawEditAssist(struct NodeData *nodeData);
+void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = 0);
 
 #endif

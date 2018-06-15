@@ -62,31 +62,28 @@ void drawShape(struct Vertex *startPt, struct Vertex *endPt, int shapeType, colo
 struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, int shapeType) {
     assert(list != NULL && startPt != NULL && endPt != NULL);
 
-    if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
-        return NULL;
-    }
 
     switch (shapeType) {
         case DATATYPE_SEGMENT: {
+            if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
+                break;
+            }
             struct LinkedNode *res = addNode(list, makeData(makeSegment(startPt, endPt), DATATYPE_SEGMENT));
             return res;
         }
         case DATATYPE_RECTANGLE: {
             if (abs(startPt -> x - endPt -> x) <= FINDRULE_VARIATION || abs(startPt -> y - endPt -> y) <= FINDRULE_VARIATION) {
-                return NULL;
+                break;
             }
-
             struct LinkedNode *res = addNode(list, makeData(makeRectangle(startPt, endPt), DATATYPE_RECTANGLE));
             return res;
         }
         case DATATYPE_CIRCLE: {
             struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
             int radius = sqrt(getSqrEuclideanDistance(centerPt, endPt));
-
             if (radius <= FINDRULE_VARIATION) {
-                return NULL;
+                break;
             }
-
             struct LinkedNode *res = addNode(list, makeData(makeCircle(centerPt, radius), DATATYPE_CIRCLE));
             destroyVertex(startPt);
             destroyVertex(endPt);
@@ -96,21 +93,71 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
             int majorSemiAxis = abs(endPt -> x - centerPt -> x);
             int minorSemiAxis = abs(endPt -> y - centerPt -> y);
-
             if (majorSemiAxis <= FINDRULE_VARIATION || minorSemiAxis <= FINDRULE_VARIATION) {
-                return NULL;
+                break;
             }
-
             struct LinkedNode *res = addNode(list, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE));
             destroyVertex(startPt);
             destroyVertex(endPt);
             return NULL;
         }
         case DATATYPE_TEXT: {
-            return NULL;
+            break;
         }
     }
+
+    destroyVertex(startPt);
+    destroyVertex(endPt);
     return NULL;
+}
+
+void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt) {
+    assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
+
+    switch (node -> data -> type) {
+        case DATATYPE_SEGMENT: {
+            if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
+                break;
+            }
+            editNode(node, makeData(makeSegment(startPt, endPt), DATATYPE_SEGMENT), destroyRule);
+            return;
+        }
+        case DATATYPE_RECTANGLE: {
+            if (abs(startPt -> x - endPt -> x) <= FINDRULE_VARIATION || abs(startPt -> y - endPt -> y) <= FINDRULE_VARIATION) {
+                break;
+            }
+            editNode(node, makeData(makeRectangle(startPt, endPt), DATATYPE_RECTANGLE), destroyRule);
+            return;
+        }
+        case DATATYPE_CIRCLE: {
+            struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
+            int radius = sqrt(getSqrEuclideanDistance(centerPt, endPt));
+            if (radius <= FINDRULE_VARIATION) {
+                break;
+            }
+            editNode(node, makeData(makeCircle(centerPt, radius), DATATYPE_CIRCLE), destroyRule);
+            destroyVertex(startPt);
+            destroyVertex(endPt);
+            return;
+        }
+        case DATATYPE_ELLIPSE: {
+            struct Vertex *centerPt = makeVertex((startPt -> x + endPt -> x) / 2, (startPt -> y + endPt -> y) / 2);
+            int majorSemiAxis = abs(endPt -> x - centerPt -> x);
+            int minorSemiAxis = abs(endPt -> y - centerPt -> y);
+            if (majorSemiAxis <= FINDRULE_VARIATION || minorSemiAxis <= FINDRULE_VARIATION) {
+                break;
+            }
+            editNode(node, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE), destroyRule);
+            destroyVertex(startPt);
+            destroyVertex(endPt);
+            return;
+        }
+        case DATATYPE_TEXT: {
+            break;
+        }
+    }
+    destroyVertex(startPt);
+    destroyVertex(endPt);
 }
 
 void drawNodeData(struct NodeData *nodeData, color_t fgColor) {

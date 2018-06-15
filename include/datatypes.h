@@ -83,6 +83,5 @@ void destroyText(struct Text *txt);
 
 void destroyRule(struct NodeData *data);
 bool findRule(const void *vCursorPt, const struct LinkedNode *node);
-int judgeCursorState(const void *vCursorPt, const struct LinkedNode *node);
 
 #endif

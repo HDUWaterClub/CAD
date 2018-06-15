@@ -36,7 +36,7 @@ struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData);
 
 // Edit data of a segment
 // Returns nothing
-void editNode(struct LinkedNode *node, struct NodeData *newData);
+void editNode(struct LinkedNode *node, struct NodeData *newData, void (*destroyDataFunc)(struct NodeData *));
 
 // Find LinkedNode using given function
 // Returns LinkedNode pointer

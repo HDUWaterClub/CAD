@@ -14,6 +14,7 @@ void getRealPosition(struct Vertex *cntPt);
 
 void drawShape(struct Vertex *startPt, struct Vertex *endPt, int shapeType, color_t fgColor);
 struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, int shapeType);
+void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt);
 void drawNodeData(struct NodeData *nodeData, color_t fgColor);
 void redrawAll(struct LinkedList *list, color_t fgColor);
 

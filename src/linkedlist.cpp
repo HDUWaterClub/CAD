@@ -44,7 +44,7 @@ struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData) {
         return NULL;
     }
 
-    editNode(newNode, newData);
+    newNode -> data = newData;
     newNode -> prev = list -> tail;
     newNode -> next = NULL;
 
@@ -63,8 +63,9 @@ struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData) {
 }
 
 // Complexity: O(1)
-void editNode(struct LinkedNode *node, struct NodeData *newData) {
+void editNode(struct LinkedNode *node, struct NodeData *newData, void (*destroyDataFunc)(struct NodeData *)) {
     assert(node != NULL && newData != NULL);
+    destroyDataFunc(node -> data);
     node -> data = newData;
 }
 
