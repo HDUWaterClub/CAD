@@ -68,6 +68,7 @@ void changeButtonText(int buttonId, char *text);
 void init();
 
 void drawEditAssist(struct NodeData *nodeData);
+bool isInAssistArea(struct Vertex *cursorPt);
 void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = 0);
 
 int getAssistId(struct Vertex *cursorPt);

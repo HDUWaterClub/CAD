@@ -73,7 +73,7 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                 if (m.is_down()) {
                     struct Vertex *cursorPt = makeVertex(m.x, m.y);
                     getRealPosition(cursorPt);
-                    bool isInShape = findRule(cursorPt, node);
+                    bool isInShape = (findRule(cursorPt, node) || isInAssistArea(cursorPt));
                     destroyVertex(cursorPt);
 
                     if (isInShape) {
@@ -87,7 +87,14 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                                 moveShape(list, node, m.x, m.y);
                                 break;
                             } else {
+                                struct Vertex *startPt = NULL, *endPt = NULL;
+                                trackEditPts(list, node -> data, assistId, &startPt, &endPt);
+                                assert(startPt != NULL && endPt != NULL);
 
+                                editShape(node, startPt, endPt);
+                                redrawAll(list, SHAPE_DEFAULT_COLOR);
+
+                                break;
                             }
                         } else if (m.is_right()) {
                             // Move current shape to list head

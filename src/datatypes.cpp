@@ -186,8 +186,8 @@ bool findEllipseRule(const struct Vertex *cursorPt, const struct Ellipse *elp) {
     }
 }
 
-struct Text * makeText(struct Rectangle *newPosition, char *newContent, char *newFontName, int newFontSize) {
-    assert(newPosition != NULL && newContent != NULL && newFontName != NULL);
+struct Text * makeText(struct Rectangle *newPosition, char *newContent, int newFontWidth, int newFontHeight) {
+    assert(newPosition != NULL && newContent != NULL);
     errno = 0;
     struct Text *newText = (struct Text *)malloc(sizeof(struct Text));
     if (newText == NULL) {
@@ -197,16 +197,14 @@ struct Text * makeText(struct Rectangle *newPosition, char *newContent, char *ne
     }
     newText -> position = newPosition;
     newText -> content = newContent;
-    newText -> fontName = newFontName;
-    newText -> fontSize = newFontSize;
+    newText -> fontWidth = newFontWidth;
+    newText -> fontHeight = newFontHeight;
     return newText;
 }
 
 void destoryText(struct Text *txt) {
     assert(txt != NULL);
     destroyRectangle(txt -> position);
-    free(txt -> fontName);
-    txt -> fontName = NULL;
     free(txt -> content);
     txt -> content = NULL;
     free(txt);

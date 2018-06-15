@@ -232,6 +232,45 @@ struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
     }
 }
 
+void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
+                struct Vertex **startPt, struct Vertex **endPt) {
+    assert(list != NULL && data!= NULL && *startPt == NULL && *endPt == NULL);
+    int xType = assistId / 3, yType = assistId % 3;
+
+    getStartEndPts(data, startPt, endPt);
+    assert(startPt != NULL && endPt != NULL && *startPt != NULL && *endPt != NULL);
+
+    struct Vertex *cntEndPt = makeVertex((*endPt) -> x, (*endPt) -> y);
+    drawShape(*startPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+
+    while (true) {
+        mouse_msg m = getmouse();
+
+        // Clear previous
+        redrawAll(list, SHAPE_DEFAULT_COLOR);
+        drawNodeData(data, EDIT_ASSIST_COLOR);
+
+        cntEndPt -> x = m.x;
+        cntEndPt -> y = m.y;
+        getRealPosition(cntEndPt);
+
+        if (xType == 2) {
+            cntEndPt -> y = (*endPt) -> y;
+        }
+        if (yType == 2) {
+            cntEndPt -> x = (*endPt) -> x;
+        }
+
+        drawShape(*startPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+
+        if (m.is_up() && m.is_left()) {
+            destroyVertex(*endPt);
+            *endPt = cntEndPt;
+            return;
+        }
+    }
+}
+
 void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *cursorPt,
                 struct Vertex **startPt, struct Vertex **endPt) {
     assert(list != NULL && data != NULL && cursorPt != NULL);

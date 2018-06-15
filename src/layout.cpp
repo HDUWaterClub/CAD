@@ -4,6 +4,7 @@
 
 #include "windows.h"
 
+#include "datatypes.h"
 #include "distance.h"
 #include "layout.h"
 
@@ -318,8 +319,23 @@ void drawEditAssist(struct NodeData *nodeData) {
     setcolor(prevFillColor);
 }
 
+bool isInAssistArea(struct Vertex *cursorPt) {
+    assert(cursorPt != NULL);
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
+            struct Circle *cir = makeCircle(&editAssistArr[i], EDIT_ASSIST_RADIUS);
+            bool res = findCircleRule(cursorPt, cir);
+            destoryCircle(cir);
+            if (res) {
+                return res;
+            }
+        }
+    }
+    return false;
+}
+
 void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
-    assert(data != NULL);
+    assert(data != NULL && *startPt == NULL && *endPt == NULL);
 
     int xType = assistId / 3, yType = assistId % 3;
     int startPtx, startPty;

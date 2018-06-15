@@ -20,6 +20,9 @@ void redrawAll(struct LinkedList *list, color_t fgColor);
 
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
                         int shapeType, color_t newFgColor, color_t drawnFgColor);
+void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
+                struct Vertex **startPt, struct Vertex **endPt);
+
 void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *cursorPt,
                 struct Vertex **startPt, struct Vertex **endPt);
 

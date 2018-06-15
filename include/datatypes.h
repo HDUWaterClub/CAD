@@ -73,11 +73,10 @@ void destroyEllipse(struct Ellipse *elp);
 
 struct Text {
     struct Rectangle *position;
-    int fontSize;
-    char *fontName;
+    int fontWidth, fontHeight;
     char *content;
 };
-struct Text * makeText(struct Rectangle *newPosition, char *newContent, char *newFontName, int newFontSize);
+struct Text * makeText(struct Rectangle *newPosition, char *newContent, int newFontWidth, int newFontHeight);
 bool findTextRule(const struct Vertex *cursorPt, const struct Text *txt);
 void destroyText(struct Text *txt);
 
