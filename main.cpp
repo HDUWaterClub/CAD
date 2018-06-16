@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <errno.h>
 
@@ -23,7 +24,11 @@ void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my)
     destroyVertex(cursorPt);
 
     if (startPt != NULL && endPt != NULL) {
-        editShape(node, startPt, endPt);
+        if (node -> data -> type == DATATYPE_TEXT) {
+            editText(node, startPt, endPt);
+        } else {
+            editShape(node, startPt, endPt);
+        }
     }
 
     redrawAll(list, SHAPE_DEFAULT_COLOR);
@@ -32,8 +37,8 @@ void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my)
 int editMode(struct LinkedList *list, struct LinkedNode *node) {
     assert(node != NULL && node -> data != NULL);
 
-    changeButtonText(BUTTON_TYPE_CLEAR, "DELETE");
-    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
+    changeButtonText(BUTTON_TYPE_CLEAR, (char *)"DELETE");
+    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_AVAILABLE);
 
     bool shouldReturn = false, isFirst = true;
     int returnVal = BUTTON_NON_ACTIVE;
@@ -90,10 +95,8 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                                 struct Vertex *startPt = NULL, *endPt = NULL;
                                 trackEditPts(list, node -> data, assistId, &startPt, &endPt);
                                 assert(startPt != NULL && endPt != NULL);
-
                                 editShape(node, startPt, endPt);
                                 redrawAll(list, SHAPE_DEFAULT_COLOR);
-
                                 break;
                             }
                         } else if (m.is_right()) {
@@ -128,8 +131,8 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
         }
     }
 
-    changeButtonText(BUTTON_TYPE_CLEAR, "CLEAR");
-    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_INACTIVE);
+    changeButtonText(BUTTON_TYPE_CLEAR, (char *)"CLEAR");
+    drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_AVAILABLE);
     return returnVal;
 }
 
@@ -197,6 +200,48 @@ int drawMode(struct LinkedList *list, int shapeType) {
     return cntButtonId;
 }
 
+int textMode(struct LinkedList *list) {
+    assert(list != NULL);
+    while (true) {
+        mouse_msg m = getmouse();
+        // Only left key clicking down matters
+        if (!m.is_left() || !m.is_down()) {
+            continue;
+        }
+        int cntArea = whichArea(m.x);
+        if (cntArea == AREA_MENU) {
+            // When user clicked left button in menu area,
+            // decide about changing work mode
+            int nextButtonId = getButtonId(m.x, m.y);
+            if (nextButtonId != BUTTON_NON_CHANGED) {
+                return cntButtonId == nextButtonId ? BUTTON_NON_ACTIVE : nextButtonId;
+            }
+        } else if (cntArea == AREA_CANVAS) {
+            struct Vertex *startPt = makeVertex(m.x, m.y);
+            getRealPosition(startPt);
+
+            char *content = (char *)malloc(sizeof(char) * DATATYPE_TEXT_MAX_LENGTH);
+            setViewPort(AREA_ALL);
+            while (inputbox_getline((char *)"Add Text", (char *)"Please leave something here and press ENTER.\nLeave it blank to exit...", content, DATATYPE_TEXT_MAX_LENGTH) == 0) {
+                if (strlen(content) == 0) {
+                    free(content);
+                    content = NULL;
+                    break;
+                }
+            }
+            setViewPort(AREA_CANVAS);
+
+            if (content != NULL) {
+                struct Vertex *endPt = drawText(startPt, content, SHAPE_DEFAULT_COLOR, BLACK);
+                saveText(list, startPt, endPt, content, cntFont.lfWidth, cntFont.lfHeight);
+            }
+
+            redrawAll(list, SHAPE_DEFAULT_COLOR);
+        }
+    }
+    return cntButtonId;
+}
+
 int main()
 {
     init();
@@ -231,7 +276,7 @@ int main()
                 break;
             }
             case BUTTON_TYPE_TEXT: {
-                nextButtonId = drawMode(&list, DATATYPE_TEXT);
+                nextButtonId = textMode(&list);
                 break;
             }
             case BUTTON_TYPE_CLEAR: {
@@ -248,10 +293,10 @@ int main()
         }
 
         if (cntButtonId >= 0 && cntButtonId < BUTTON_NUMBER) {
-            drawButton(cntButtonId, BUTTON_STATE_INACTIVE);
+            drawButton(cntButtonId, BUTTON_STATE_AVAILABLE);
         }
         if (nextButtonId >= 0 && nextButtonId < BUTTON_NUMBER) {
-            drawButton(nextButtonId, BUTTON_STATE_ACTIVE);
+            drawButton(nextButtonId, BUTTON_STATE_AVAILABLE + BUTTON_STATE_ACTIVE);
         }
         cntButtonId = nextButtonId;
     }

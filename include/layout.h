@@ -6,13 +6,14 @@
 // Area
 #define AREA_MENU 0
 #define AREA_CANVAS 1
+#define AREA_ALL 2
 
 // Button
 #define BUTTON_NUMBER 7
 #define BUTTON_TEXT_LENGTH 127
 
-#define BUTTON_STATE_INACTIVE 0
-#define BUTTON_STATE_ACTIVE 1
+#define BUTTON_STATE_AVAILABLE 1
+#define BUTTON_STATE_ACTIVE 2
 
 #define BUTTON_FILL_COLOR_ACTIVE EGERGB(40, 40, 40)
 #define BUTTON_FILL_COLOR_INACTIVE EGERGB(56, 56, 56)
@@ -47,7 +48,6 @@
 #define EDIT_ASSIST_DRAW_SIDE_NON_SAME 2
 #define EDIT_ASSIST_DRAW_MID 4
 
-
 struct Button {
     bool isAvailable;
     int minx, miny, width, height;
@@ -56,6 +56,7 @@ struct Button {
 
 extern int screenWidth, screenHeight;
 extern int menuWidth, canvasWidth;
+extern int paddingWidth, paddingHeight;
 extern struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
 
 void printLog(char *str);
@@ -69,7 +70,7 @@ bool isInRec(int x, int y, int x1, int y1, int x2, int y2);
 int whichArea(int x);
 int getButtonId(int x, int y);
 
-void drawButton(int buttonId, bool state);
+void drawButton(int buttonId, int state);
 void changeButtonText(int buttonId, char *text);
 
 void init();

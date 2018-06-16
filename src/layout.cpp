@@ -6,6 +6,7 @@
 
 #include "datatypes.h"
 #include "distance.h"
+#include "draw.h"
 #include "layout.h"
 
 struct Button btnArr[BUTTON_NUMBER];
@@ -74,6 +75,10 @@ int whichArea(int x) {
 
 int getButtonId(int x, int y) {
     for (int i = 0; i < BUTTON_NUMBER; i++) {
+        if (!btnArr[i].isAvailable) {
+            continue;
+        }
+
         if (isInRec(x, y, btnArr[i].minx, btnArr[i].miny,
             btnArr[i].minx + btnArr[i].width, btnArr[i].miny + btnArr[i].height)) {
                 return i;
@@ -82,7 +87,7 @@ int getButtonId(int x, int y) {
     return BUTTON_NON_CHANGED;
 }
 
-void drawButton(int buttonId, bool state) {
+void drawButton(int buttonId, int state) {
     assert(buttonId >= 0 && buttonId < BUTTON_NUMBER);
 
     int prevViewPort = getViewPort();
@@ -90,11 +95,18 @@ void drawButton(int buttonId, bool state) {
 
     color_t prevColor = getcolor(), prevFillColor = getfillcolor();
 
+    if (state & BUTTON_STATE_AVAILABLE) {
+        btnArr[buttonId].isAvailable = true;
+    } else {
+        btnArr[buttonId].isAvailable = false;
+    }
+
     color_t textColor = BUTTON_FOREGROUND_COLOR_INACTIVE, fillColor = BUTTON_FILL_COLOR_INACTIVE;
-    if (state == BUTTON_STATE_ACTIVE) {
+    if (state & BUTTON_STATE_ACTIVE) {
         textColor = BUTTON_FOREGROUND_COLOR_ACTIVE;
         fillColor = BUTTON_FILL_COLOR_ACTIVE;
     }
+
     setcolor(textColor);
     setfillcolor(fillColor);
     setfontbkcolor(fillColor);
@@ -199,11 +211,15 @@ void drawMenu() {
     snprintf(btnArr[6].text, sizeof(btnArr[6].text), "EXIT");
 
     for (int i = 0; i < BUTTON_NUMBER; i++) {
+        btnArr[i].isAvailable = true;
         btnArr[i].minx = paddingWidth;
         btnArr[i].miny = screenHeight * (i + 2) / 10 + paddingHeight;
         btnArr[i].width = buttonWidth;
         btnArr[i].height = buttonHeight;
-        drawButton(i, BUTTON_STATE_INACTIVE);
+
+        if (btnArr[i].isAvailable) {
+            drawButton(i, BUTTON_STATE_AVAILABLE);
+        }
     }
 
     setViewPort(prevViewPort);
@@ -233,6 +249,12 @@ void init() {
     paddingWidth = menuWidth / 10, paddingHeight = screenHeight / 50;
 
     drawMenu();
+
+    cntFont.lfWidth = buttonFont.lfWidth;
+    cntFont.lfHeight = buttonFont.lfHeight;
+    cntFont.lfWeight = FW_REGULAR;
+    cntFont.lfQuality = PROOF_QUALITY;
+    setfont(&cntFont);
 
     // Set viewport to canvas
     setViewPort(AREA_CANVAS);
@@ -277,6 +299,9 @@ void drawEditAssist(struct NodeData *nodeData) {
         }
         case DATATYPE_TEXT: {
             struct Text *txt = (struct Text *)nodeData -> content;
+            struct Rectangle *pos = (struct Rectangle *)txt -> position;
+            minx = pos -> lowerLeftPt -> x, miny = pos -> lowerLeftPt -> y;
+            maxx = pos -> upperRightPt -> x, maxy = pos -> upperRightPt -> y;
             drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
             break;
         }
@@ -442,10 +467,40 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
                     endPty = elp -> centerPt -> y + elp -> minorSemiAxis;
                 }
             }
+
+            break;
+        }
+        case DATATYPE_TEXT: {
+            struct Text *txt = (struct Text *)data -> content;
+            struct Rectangle *pos = (struct Rectangle *)txt -> position;
+
+            if (xType == 0) {
+                startPtx = pos -> upperRightPt -> x;
+            } else {
+                startPtx = pos -> lowerLeftPt -> x;
+                if (xType == 2) {
+                    endPtx = pos -> upperRightPt -> x;
+                }
+            }
+            if (yType == 0) {
+                startPty = pos -> upperRightPt -> y;
+            } else {
+                startPty = pos -> lowerLeftPt -> y;
+                if (yType == 2) {
+                    endPty = pos -> upperRightPt -> y;
+                }
+            }
+
+            int minx = min(startPtx, endPtx), miny = min(startPty, endPty);
+            int maxx = max(startPtx, endPtx), maxy = max(startPty, endPty);
+
+            startPtx = minx, startPty = miny;
+            endPtx = maxx, endPty = maxy;
+
             break;
         }
         default: {
-            break;
+            return;
         }
     }
 

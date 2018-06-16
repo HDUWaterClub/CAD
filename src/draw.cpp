@@ -6,6 +6,8 @@
 #include "draw.h"
 #include "layout.h"
 
+LOGFONT cntFont;
+
 void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor) {
     color_t prevFillColor = getfillcolor();
     setfillcolor(fillColor);
@@ -112,6 +114,11 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
     return NULL;
 }
 
+struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight) {
+    struct LinkedNode *res = addNode(list, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT));
+    return res;
+}
+
 void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt) {
     assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
 
@@ -161,6 +168,24 @@ void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *e
     destroyVertex(endPt);
 }
 
+void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt,
+              char *text, int fontWidth, int fontHeight) {
+    assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
+
+    if (text == NULL || fontWidth < 0 || fontHeight < 0) {
+        struct Text *txt = (struct Text *)node -> data;
+        text = (char *)"Heck!";
+        fontWidth = txt -> fontWidth;
+        fontHeight = txt -> fontHeight;
+    }
+
+    if (abs(startPt -> x - endPt -> x) <= FINDRULE_VARIATION || abs(startPt -> y - endPt -> y) <= FINDRULE_VARIATION) {
+        return;
+    }
+
+    editNode(node, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT), destroyRule);
+}
+
 void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
     assert(nodeData != NULL);
     color_t prevFgColor = getcolor();
@@ -189,6 +214,8 @@ void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
         }
         case DATATYPE_TEXT: {
             struct Text *txt = (struct Text *)nodeData -> content;
+            struct Rectangle *pos = (struct Rectangle *)txt -> position;
+            drawText(pos -> lowerLeftPt, txt -> content, fgColor, BLACK);
             break;
         }
         default: {
@@ -205,6 +232,26 @@ void redrawAll(struct LinkedList *list, color_t fgColor) {
         drawNodeData(cntNode -> data, fgColor);
         cntNode = cntNode -> next;
     }
+}
+
+struct Vertex * drawText(struct Vertex *startPt, char *text, color_t textColor, color_t fillColor) {
+    assert(startPt != NULL && text != NULL);
+
+    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
+
+    setcolor(textColor);
+    setfontbkcolor(fillColor);
+    setfont(&cntFont);
+
+    int cntTextHeight = textheight(text);
+    int cntTextWidth = textwidth(text);
+
+    outtextrect(startPt -> x, startPt -> y, cntTextWidth, cntTextHeight, text);
+
+    setcolor(prevColor);
+    setfillcolor(prevFillColor);
+
+    return makeVertex(startPt -> x + cntTextWidth, startPt -> y + cntTextHeight);
 }
 
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
@@ -295,12 +342,17 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
         (*startPt) -> x += deltax;
         (*startPt) -> y += deltay;
         (*endPt) -> x += deltax;
-        (*endPt)-> y += deltay;
+        (*endPt) -> y += deltay;
 
         redrawAll(list, SHAPE_DEFAULT_COLOR);
         drawNodeData(data, EDIT_ASSIST_COLOR);
 
-        drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
+        if (data -> type == DATATYPE_TEXT) {
+            struct Text *txt = (struct Text *)data -> content;
+            drawText(*startPt, txt -> content, SHAPE_DEFAULT_COLOR, BLACK);
+        } else {
+            drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
+        }
 
         if (m.is_up()) {
             return;
