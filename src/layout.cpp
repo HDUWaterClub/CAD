@@ -18,6 +18,10 @@ int paddingWidth, paddingHeight;
 
 LOGFONT buttonFont, logoFont;
 
+void printLog(char *str) {
+    MessageBox(NULL, str, "FUCK", MB_OK | MB_SYSTEMMODAL);
+}
+
 void getMonitorResolution() {
     screenWidth = GetSystemMetrics(SM_CXSCREEN);
     screenHeight = GetSystemMetrics(SM_CYSCREEN);
@@ -240,42 +244,40 @@ void drawEditAssist(struct NodeData *nodeData) {
     setfillcolor(EDIT_ASSIST_COLOR);
 
     int minx, miny, maxx, maxy;
-    bool noMid = false, onlySame = false;
+    int drawConf = 0;
+
     switch (nodeData -> type) {
         case DATATYPE_SEGMENT: {
             struct Segment *seg = (struct Segment *)nodeData -> content;
             minx = seg -> leftPt -> x, miny = seg -> leftPt -> y;
             maxx = seg -> rightPt -> x, maxy = seg -> rightPt -> y;
-            noMid = true;
-            onlySame = true;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME;
             break;
         }
         case DATATYPE_RECTANGLE: {
             struct Rectangle *rec = (struct Rectangle *)nodeData -> content;
             minx = rec -> lowerLeftPt -> x, miny = rec -> lowerLeftPt -> y;
             maxx = rec -> upperRightPt -> x, maxy = rec -> upperRightPt -> y;
-            noMid = false;
-            onlySame = false;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
             break;
         }
         case DATATYPE_CIRCLE: {
             struct Circle *cir = (struct Circle *)nodeData -> content;
             minx = cir -> centerPt -> x - cir -> radius, miny = cir -> centerPt -> y - cir -> radius;
             maxx = cir -> centerPt -> x + cir -> radius, maxy = cir -> centerPt -> y + cir -> radius;
-            noMid = true;
-            onlySame = false;
+            drawConf = EDIT_ASSIST_DRAW_MID;
             break;
         }
         case DATATYPE_ELLIPSE: {
             struct Ellipse * elp = (struct Ellipse *)nodeData -> content;
             minx = elp -> centerPt -> x - elp -> majorSemiAxis, miny = elp -> centerPt -> y - elp -> minorSemiAxis;
             maxx = elp -> centerPt -> x + elp -> majorSemiAxis, maxy = elp -> centerPt -> y + elp -> minorSemiAxis;
-            noMid = false;
-            onlySame = false;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
             break;
         }
         case DATATYPE_TEXT: {
             struct Text *txt = (struct Text *)nodeData -> content;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
             break;
         }
         default: {
@@ -283,15 +285,38 @@ void drawEditAssist(struct NodeData *nodeData) {
         }
     }
 
+    // Initialize
     for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
-        int xType = i / 3, yType = i % 3;
+        editAssistArr[i].x = -1;
+        editAssistArr[i].y = -1;
+    }
+
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        const int xType = i / 3, yType = i % 3;
         int cntx, cnty;
+
+        // Validate
+        if (!(drawConf & EDIT_ASSIST_DRAW_SIDE_SAME)) {
+            if (xType != 2 && yType != 2 && xType == yType) {
+                continue;
+            }
+        }
+        if (!(drawConf & EDIT_ASSIST_DRAW_SIDE_NON_SAME)) {
+            if (xType != 2 && yType != 2 && xType != yType) {
+                continue;
+            }
+        }
+        if (!(drawConf & EDIT_ASSIST_DRAW_MID)) {
+            if (xType == 2 || yType == 2) {
+                continue;
+            }
+        }
 
         if (xType == 0) {
             cntx = minx;
         } else if (xType == 1) {
             cntx = maxx;
-        } else if (!noMid) {
+        } else {
             cntx = (minx + maxx) / 2;
         }
 
@@ -299,13 +324,8 @@ void drawEditAssist(struct NodeData *nodeData) {
             cnty = miny;
         } else if (yType == 1) {
             cnty = maxy;
-        } else if (!noMid) {
+        } else {
             cnty = (miny + maxy) / 2;
-        }
-
-        if (onlySame && (xType != yType)) {
-            cntx = -1;
-            cnty = -1;
         }
 
         editAssistArr[i].x = cntx;
@@ -337,14 +357,21 @@ bool isInAssistArea(struct Vertex *cursorPt) {
 void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
     assert(data != NULL && *startPt == NULL && *endPt == NULL);
 
-    int xType = assistId / 3, yType = assistId % 3;
+    if (assistId == -1) {
+        if (data -> type == DATATYPE_CIRCLE) {
+            assistId = 2;
+        } else {
+            assistId = 0;
+        }
+    }
+
+    const int xType = assistId / 3, yType = assistId % 3;
     int startPtx, startPty;
     int endPtx = editAssistArr[assistId].x, endPty = editAssistArr[assistId].y;
 
     switch (data -> type) {
         case DATATYPE_SEGMENT: {
             struct Segment *seg = (struct Segment *)data -> content;
-            assert(assistId == 0 || assistId == 4);
             if (xType == 0) {
                 startPtx = seg -> rightPt -> x;
                 startPty = seg -> rightPt -> y;
@@ -361,24 +388,39 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
                 startPtx = rec -> upperRightPt -> x;
             } else {
                 startPtx = rec -> lowerLeftPt -> x;
+                if (xType == 2) {
+                    endPtx = rec -> upperRightPt -> x;
+                }
             }
             if (yType == 0) {
                 startPty = rec -> upperRightPt -> y;
             } else {
                 startPty = rec -> lowerLeftPt -> y;
+                if (yType == 2) {
+                    endPty = rec -> upperRightPt -> y;
+                }
             }
             break;
         }
         case DATATYPE_CIRCLE: {
             struct Circle *cir = (struct Circle *)data -> content;
 
-            if (xType == 0) {
-                startPtx = cir -> centerPt -> x + cir -> radius;
-            } else {
-                startPtx = cir -> centerPt -> x - cir -> radius;
+            if (xType == 2) {
+                startPtx = endPtx;
+                if (yType == 0) {
+                    startPty = endPty + cir -> radius * 2;
+                } else {
+                    startPty = endPty - cir -> radius * 2;
+                }
             }
-            startPty = cir -> centerPt -> y;
-            endPty = cir -> centerPt -> y;
+            if (yType == 2) {
+                if (xType == 0) {
+                    startPtx = endPtx + cir -> radius * 2;
+                } else {
+                    startPtx = endPtx - cir -> radius * 2;
+                }
+                startPty = endPty;
+            }
             break;
         }
         case DATATYPE_ELLIPSE: {
@@ -388,13 +430,18 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
                 startPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
             } else {
                 startPtx = elp -> centerPt -> x - elp -> majorSemiAxis;
+                if (xType == 2) {
+                    endPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
+                }
             }
             if (yType == 0) {
                 startPty = elp -> centerPt -> y + elp -> minorSemiAxis;
             } else {
                 startPty = elp -> centerPt -> y - elp -> minorSemiAxis;
+                if (yType == 2) {
+                    endPty = elp -> centerPt -> y + elp -> minorSemiAxis;
+                }
             }
-
             break;
         }
         default: {

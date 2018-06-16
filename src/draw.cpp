@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <math.h>
 #include <assert.h>
 
@@ -235,55 +236,53 @@ struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
 void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
                 struct Vertex **startPt, struct Vertex **endPt) {
     assert(list != NULL && data!= NULL && *startPt == NULL && *endPt == NULL);
-    int xType = assistId / 3, yType = assistId % 3;
 
-    getStartEndPts(data, startPt, endPt);
+    const int xType = assistId / 3, yType = assistId % 3;
+
+    getStartEndPts(data, startPt, endPt, assistId);
     assert(startPt != NULL && endPt != NULL && *startPt != NULL && *endPt != NULL);
 
-    struct Vertex *cntEndPt = makeVertex((*endPt) -> x, (*endPt) -> y);
-    drawShape(*startPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+    const int origx = (*endPt) -> x, origy = (*endPt) -> y;
 
     while (true) {
         mouse_msg m = getmouse();
 
-        // Clear previous
-        redrawAll(list, SHAPE_DEFAULT_COLOR);
-        drawNodeData(data, EDIT_ASSIST_COLOR);
+        (*endPt) -> x = m.x;
+        (*endPt) -> y = m.y;
+        getRealPosition(*endPt);
 
-        cntEndPt -> x = m.x;
-        cntEndPt -> y = m.y;
-        getRealPosition(cntEndPt);
 
         if (xType == 2) {
-            cntEndPt -> y = (*endPt) -> y;
+            (*endPt) -> x = origx;
         }
         if (yType == 2) {
-            cntEndPt -> x = (*endPt) -> x;
+            (*endPt) -> y = origy;
         }
 
-        drawShape(*startPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+        redrawAll(list, SHAPE_DEFAULT_COLOR);
+        drawNodeData(data, EDIT_ASSIST_COLOR);
+        drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
 
-        if (m.is_up() && m.is_left()) {
-            destroyVertex(*endPt);
-            *endPt = cntEndPt;
+        if (m.is_up()) {
             return;
         }
     }
+
+    destroyVertex(*startPt);
+    destroyVertex(*endPt);
 }
 
 void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *cursorPt,
                 struct Vertex **startPt, struct Vertex **endPt) {
-    assert(list != NULL && data != NULL && cursorPt != NULL);
+    assert(list != NULL && data != NULL && cursorPt != NULL && *startPt == NULL && *endPt == NULL);
 
-    struct Vertex *cntStartPt = NULL, *cntEndPt = NULL;
-    getStartEndPts(data, &cntStartPt, &cntEndPt);
+    getStartEndPts(data, startPt, endPt);
+    assert(startPt != NULL && endPt != NULL && *startPt != NULL && *endPt != NULL);
 
     while (true) {
         mouse_msg m = getmouse();
 
         if (whichArea(m.x) == AREA_MENU) {
-            destroyVertex(cntStartPt);
-            destroyVertex(cntEndPt);
             break;
         }
 
@@ -293,22 +292,21 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
         getRealPosition(cursorPt);
         int deltax = cursorPt -> x - prevx, deltay = cursorPt -> y - prevy;
 
-        cntStartPt -> x += deltax;
-        cntStartPt-> y += deltay;
-        cntEndPt -> x += deltax;
-        cntEndPt-> y += deltay;
+        (*startPt) -> x += deltax;
+        (*startPt) -> y += deltay;
+        (*endPt) -> x += deltax;
+        (*endPt)-> y += deltay;
 
         redrawAll(list, SHAPE_DEFAULT_COLOR);
         drawNodeData(data, EDIT_ASSIST_COLOR);
-        drawShape(cntStartPt, cntEndPt, data -> type, SHAPE_DEFAULT_COLOR);
+
+        drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
 
         if (m.is_up()) {
-            *startPt = cntStartPt;
-            *endPt = cntEndPt;
             return;
         }
     }
 
-    startPt = NULL;
-    endPt = NULL;
+    destroyVertex(*startPt);
+    destroyVertex(*endPt);
 }

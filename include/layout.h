@@ -43,8 +43,13 @@
 
 #define EDIT_ASSIST_MAX_NUM 8
 
+#define EDIT_ASSIST_DRAW_SIDE_SAME 1
+#define EDIT_ASSIST_DRAW_SIDE_NON_SAME 2
+#define EDIT_ASSIST_DRAW_MID 4
+
 
 struct Button {
+    bool isAvailable;
     int minx, miny, width, height;
     char text[BUTTON_TEXT_LENGTH];
 };
@@ -52,6 +57,8 @@ struct Button {
 extern int screenWidth, screenHeight;
 extern int menuWidth, canvasWidth;
 extern struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
+
+void printLog(char *str);
 
 void clearCanvas();
 
@@ -69,7 +76,7 @@ void init();
 
 void drawEditAssist(struct NodeData *nodeData);
 bool isInAssistArea(struct Vertex *cursorPt);
-void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = 0);
+void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = -1);
 
 int getAssistId(struct Vertex *cursorPt);
 
