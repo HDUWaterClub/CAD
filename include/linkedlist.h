@@ -32,7 +32,8 @@ struct NodeData * makeData(void *newContent, int newType);
 
 // Add a new segment into the database
 // Return the pointer of the added segment
-struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData);
+struct LinkedNode * addNodeAtHead(struct LinkedList *list, struct NodeData *newData);
+struct LinkedNode * addNodeAtTail(struct LinkedList *list, struct NodeData *newData);
 
 // Edit data of a segment
 // Returns nothing

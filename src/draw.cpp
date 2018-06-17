@@ -71,14 +71,14 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             if (getManhattanDistance(startPt, endPt) <= FINDRULE_VARIATION) {
                 break;
             }
-            struct LinkedNode *res = addNode(list, makeData(makeSegment(startPt, endPt), DATATYPE_SEGMENT));
+            struct LinkedNode *res = addNodeAtTail(list, makeData(makeSegment(startPt, endPt), DATATYPE_SEGMENT));
             return res;
         }
         case DATATYPE_RECTANGLE: {
             if (abs(startPt -> x - endPt -> x) <= FINDRULE_VARIATION || abs(startPt -> y - endPt -> y) <= FINDRULE_VARIATION) {
                 break;
             }
-            struct LinkedNode *res = addNode(list, makeData(makeRectangle(startPt, endPt), DATATYPE_RECTANGLE));
+            struct LinkedNode *res = addNodeAtTail(list, makeData(makeRectangle(startPt, endPt), DATATYPE_RECTANGLE));
             return res;
         }
         case DATATYPE_CIRCLE: {
@@ -87,7 +87,7 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             if (radius <= FINDRULE_VARIATION) {
                 break;
             }
-            struct LinkedNode *res = addNode(list, makeData(makeCircle(centerPt, radius), DATATYPE_CIRCLE));
+            struct LinkedNode *res = addNodeAtTail(list, makeData(makeCircle(centerPt, radius), DATATYPE_CIRCLE));
             destroyVertex(startPt);
             destroyVertex(endPt);
             return res;
@@ -99,7 +99,7 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
             if (majorSemiAxis <= FINDRULE_VARIATION || minorSemiAxis <= FINDRULE_VARIATION) {
                 break;
             }
-            struct LinkedNode *res = addNode(list, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE));
+            struct LinkedNode *res = addNodeAtTail(list, makeData(makeEllipse(centerPt, majorSemiAxis, minorSemiAxis), DATATYPE_ELLIPSE));
             destroyVertex(startPt);
             destroyVertex(endPt);
             return res;
@@ -115,7 +115,7 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
 }
 
 struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight) {
-    struct LinkedNode *res = addNode(list, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT));
+    struct LinkedNode *res = addNodeAtTail(list, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT));
     return res;
 }
 

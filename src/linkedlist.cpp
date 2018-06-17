@@ -33,7 +33,36 @@ struct NodeData * makeData(void *newContent, int newType) {
 }
 
 // Complexity: O(1)
-struct LinkedNode * addNode(struct LinkedList *list, struct NodeData *newData) {
+struct LinkedNode * addNodeAtHead(struct LinkedList *list, struct NodeData *newData) {
+    assert(list != NULL && newData != NULL);
+    errno = 0;
+    // Create new segment
+    struct LinkedNode *newNode = (struct LinkedNode *)malloc(sizeof(struct LinkedNode));
+    if (newNode == NULL) {
+        free(newNode);
+        perror("addNode");
+        return NULL;
+    }
+
+    newNode -> data = newData;
+    newNode -> prev = NULL;
+    newNode -> next = list -> head;
+
+    // Maintain list
+    if (list -> tail == NULL) {
+        list -> tail = newNode;
+    }
+    if (list -> head != NULL) {
+        list -> head -> prev = newNode;
+    }
+
+    list -> head = newNode;
+    list -> listSize++;
+
+    return newNode;
+}
+
+struct LinkedNode * addNodeAtTail(struct LinkedList *list, struct NodeData *newData) {
     assert(list != NULL && newData != NULL);
     errno = 0;
     // Create new segment
