@@ -339,7 +339,7 @@ void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
             cntFont.lfQuality = NONANTIALIASED_QUALITY;
 
             struct Text *txt = (struct Text *)data -> content;
-            drawText(*startPt, *endPt,  txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, BLACK);
+            drawText(*startPt, *endPt,  txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, CANVAS_COLOR);
         } else {
             drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
         }
@@ -385,7 +385,7 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
             struct Text *txt = (struct Text *)data -> content;
             LOGFONT cntFont = defaultFont;
             cntFont.lfQuality = NONANTIALIASED_QUALITY;
-            drawText(*startPt, *endPt, txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, BLACK);
+            drawText(*startPt, *endPt, txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, CANVAS_COLOR);
         } else {
             drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
         }

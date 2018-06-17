@@ -57,9 +57,10 @@ void setViewPort(int areaId) {
 }
 
 void clearCanvas() {
+    int prevViewPort = getViewPort();
     setViewPort(AREA_CANVAS);
-    color_t canvasColor = getbkcolor();
-    fillBlock(0, 0, canvasWidth, screenHeight, canvasColor);
+    fillBlock(0, 0, canvasWidth, screenHeight, CANVAS_COLOR);
+    setViewPort(prevViewPort);
 }
 
 bool isInRec(int x, int y, int x1, int y1, int x2, int y2) {
@@ -179,7 +180,7 @@ void drawMenu() {
 
     logoFont.lfWidth = 0;
     logoFont.lfHeight = logoFontHeight;
-    logoFont.lfWeight = FW_DEMIBOLD;
+    logoFont.lfWeight = FW_SEMIBOLD;
     logoFont.lfQuality = PROOF_QUALITY;
 
     drawLogo(paddingWidth, screenHeight / 10, BUTTON_FILL_COLOR_INACTIVE, BUTTON_FOREGROUND_COLOR_INACTIVE);
@@ -249,6 +250,7 @@ void init() {
     setfont(&defaultFont);
 
     // Set viewport to canvas
+    clearCanvas();
     setViewPort(AREA_CANVAS);
 }
 

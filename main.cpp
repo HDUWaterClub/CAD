@@ -249,7 +249,7 @@ int textMode(struct LinkedList *list) {
 
             if (content != NULL) {
                 struct Vertex *endPt = getTextEndPt(startPt, content, &defaultFont);
-                drawText(startPt, endPt, content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
+                drawText(startPt, endPt, content, &defaultFont, SHAPE_DEFAULT_COLOR, CANVAS_COLOR);
                 saveText(list, startPt, endPt, content, defaultFont.lfWidth, defaultFont.lfHeight);
             }
 

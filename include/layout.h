@@ -50,6 +50,8 @@
 #define EDIT_ASSIST_DRAW_SIDE_NON_SAME 2
 #define EDIT_ASSIST_DRAW_MID 4
 
+#define CANVAS_COLOR BLACK
+
 struct Button {
     bool isAvailable;
     int minx, miny, width, height;
