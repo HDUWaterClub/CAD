@@ -294,7 +294,7 @@ void drawEditAssist(struct NodeData *nodeData) {
             struct Rectangle *pos = (struct Rectangle *)txt -> position;
             minx = pos -> lowerLeftPt -> x, miny = pos -> lowerLeftPt -> y;
             maxx = pos -> upperRightPt -> x, maxy = pos -> upperRightPt -> y;
-            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
             break;
         }
         default: {
@@ -482,13 +482,6 @@ void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Verte
                     endPty = pos -> upperRightPt -> y;
                 }
             }
-
-            int minx = min(startPtx, endPtx), miny = min(startPty, endPty);
-            int maxx = max(startPtx, endPtx), maxy = max(startPty, endPty);
-
-            startPtx = minx, startPty = miny;
-            endPtx = maxx, endPty = maxy;
-
             break;
         }
         default: {

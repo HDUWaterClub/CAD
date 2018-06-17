@@ -31,7 +31,7 @@ void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my)
         }
     }
 
-    redrawAll(list, SHAPE_DEFAULT_COLOR);
+    redrawAll(list, SHAPE_DEFAULT_COLOR, false);
 }
 
 int editMode(struct LinkedList *list, struct LinkedNode *node) {
@@ -44,7 +44,7 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
     int returnVal = BUTTON_NON_ACTIVE;
 
     while (true) {
-        drawNodeData(node -> data, EDIT_ASSIST_COLOR);
+        drawNodeData(node -> data, EDIT_ASSIST_COLOR, false);
         drawEditAssist(node -> data);
 
         while (true) {
@@ -95,8 +95,14 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                                 struct Vertex *startPt = NULL, *endPt = NULL;
                                 trackEditPts(list, node -> data, assistId, &startPt, &endPt);
                                 assert(startPt != NULL && endPt != NULL);
-                                editShape(node, startPt, endPt);
-                                redrawAll(list, SHAPE_DEFAULT_COLOR);
+
+                                if (node -> data -> type == DATATYPE_TEXT) {
+                                    editText(node, startPt, endPt);
+                                } else {
+                                    editShape(node, startPt, endPt);
+                                }
+
+                                redrawAll(list, SHAPE_DEFAULT_COLOR, false);
                                 break;
                             }
                         } else if (m.is_right()) {
@@ -125,7 +131,7 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
             }
         }
 
-        redrawAll(list, SHAPE_DEFAULT_COLOR);
+        redrawAll(list, SHAPE_DEFAULT_COLOR, false);
         if (shouldReturn) {
             break;
         }
@@ -192,7 +198,7 @@ int drawMode(struct LinkedList *list, int shapeType) {
 
             //struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
             saveShape(list, startPt, endPt, shapeType);
-            redrawAll(list, SHAPE_DEFAULT_COLOR);
+            redrawAll(list, SHAPE_DEFAULT_COLOR, false);
             break;
             //return editMode(list, newNode);
         }
@@ -234,11 +240,10 @@ int textMode(struct LinkedList *list) {
             if (content != NULL) {
                 struct Vertex *endPt = getTextEndPt(startPt, content, &defaultFont);
                 drawText(startPt, endPt, content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
-
                 saveText(list, startPt, endPt, content, defaultFont.lfWidth, defaultFont.lfHeight);
             }
 
-            redrawAll(list, SHAPE_DEFAULT_COLOR);
+            redrawAll(list, SHAPE_DEFAULT_COLOR, false);
         }
     }
     return cntButtonId;

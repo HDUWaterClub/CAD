@@ -187,7 +187,7 @@ void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *en
     editNode(node, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT), destroyRule);
 }
 
-void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
+void drawNodeData(struct NodeData *nodeData, color_t fgColor, bool isDraft) {
     assert(nodeData != NULL);
     color_t prevFgColor = getcolor();
     setcolor(fgColor);
@@ -216,7 +216,15 @@ void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
         case DATATYPE_TEXT: {
             struct Text *txt = (struct Text *)nodeData -> content;
             struct Rectangle *pos = (struct Rectangle *)txt -> position;
-            drawText(pos -> lowerLeftPt, pos -> upperRightPt, txt -> content, &defaultFont, fgColor, BLACK);
+
+            if (isDraft) {
+                LOGFONT cntFont = defaultFont;
+                cntFont.lfQuality = NONANTIALIASED_QUALITY;
+                drawText(pos -> lowerLeftPt, pos -> upperRightPt, txt -> content, &cntFont, fgColor, BLACK);
+            } else {
+                drawText(pos -> lowerLeftPt, pos -> upperRightPt, txt -> content, &defaultFont, fgColor, BLACK);
+            }
+
             break;
         }
         default: {
@@ -226,11 +234,11 @@ void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
     setcolor(prevFgColor);
 }
 
-void redrawAll(struct LinkedList *list, color_t fgColor) {
+void redrawAll(struct LinkedList *list, color_t fgColor, bool isDraft) {
     clearCanvas();
     struct LinkedNode *cntNode = list -> head;
     while (cntNode != NULL && cntNode -> data != NULL) {
-        drawNodeData(cntNode -> data, fgColor);
+        drawNodeData(cntNode -> data, fgColor, isDraft);
         cntNode = cntNode -> next;
     }
 }
@@ -249,14 +257,10 @@ struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font) 
 
 void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
               LOGFONT *font, color_t textColor, color_t fillColor) {
-    assert(startPt != NULL && text != NULL);
+    assert(startPt != NULL && text != NULL && text != NULL && font != NULL);
 
     int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
     int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
-    startPt -> x = minx;
-    startPt -> y = miny;
-    endPt -> x = maxx;
-    endPt -> y = maxy;
 
     color_t prevColor = getcolor(), prevFillColor = getfillcolor();
 
@@ -269,7 +273,7 @@ void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
 
     setfont(&cntFont);
 
-    outtextrect(startPt -> x, startPt -> y, endPt -> x, endPt -> y, text);
+    outtextrect(minx, miny, maxx, maxy, text);
 
     setcolor(prevColor);
     setfillcolor(prevFillColor);
@@ -287,7 +291,7 @@ struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
 
         if (m.is_move()) {
             // Clear previous segment
-            redrawAll(list, drawnFgColor);
+            redrawAll(list, drawnFgColor, true);
             // Draw current segment
             cntEndPt -> x = m.x;
             cntEndPt -> y = m.y;
@@ -320,7 +324,6 @@ void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
         (*endPt) -> y = m.y;
         getRealPosition(*endPt);
 
-
         if (xType == 2) {
             (*endPt) -> x = origx;
         }
@@ -328,13 +331,16 @@ void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
             (*endPt) -> y = origy;
         }
 
-        redrawAll(list, SHAPE_DEFAULT_COLOR);
-        drawNodeData(data, EDIT_ASSIST_COLOR);
-
+        redrawAll(list, SHAPE_DEFAULT_COLOR, true);
+        drawNodeData(data, EDIT_ASSIST_COLOR, true);
 
         if (data -> type == DATATYPE_TEXT) {
+            LOGFONT cntFont = defaultFont;
+            cntFont.lfHeight += abs((*endPt) -> x - origx);
+            cntFont.lfQuality = NONANTIALIASED_QUALITY;
+
             struct Text *txt = (struct Text *)data -> content;
-            drawText(*startPt, *endPt,  txt -> content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
+            drawText(*startPt, *endPt,  txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, BLACK);
         } else {
             drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
         }
@@ -373,12 +379,14 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
         (*endPt) -> x += deltax;
         (*endPt) -> y += deltay;
 
-        redrawAll(list, SHAPE_DEFAULT_COLOR);
-        drawNodeData(data, EDIT_ASSIST_COLOR);
+        redrawAll(list, SHAPE_DEFAULT_COLOR, true);
+        drawNodeData(data, EDIT_ASSIST_COLOR, true);
 
         if (data -> type == DATATYPE_TEXT) {
             struct Text *txt = (struct Text *)data -> content;
-            drawText(*startPt, *endPt, txt -> content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
+            LOGFONT cntFont = defaultFont;
+            cntFont.lfQuality = NONANTIALIASED_QUALITY;
+            drawText(*startPt, *endPt, txt -> content, &cntFont, SHAPE_DEFAULT_COLOR, BLACK);
         } else {
             drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
         }

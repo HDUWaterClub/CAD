@@ -21,8 +21,8 @@ struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, str
 void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt);
 void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt,
               char *text = NULL, int fontWidth = -1, int fontHeight = -1);
-void drawNodeData(struct NodeData *nodeData, color_t fgColor);
-void redrawAll(struct LinkedList *list, color_t fgColor);
+void drawNodeData(struct NodeData *nodeData, color_t fgColor, bool isDraft);
+void redrawAll(struct LinkedList *list, color_t fgColor, bool isDraft);
 
 struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font);
 void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
