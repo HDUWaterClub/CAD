@@ -33,6 +33,8 @@
 // Width and height
 #define SCREEN_MIN_WIDTH 640
 #define SCREEN_MIN_HEIGHT 480
+#define SCREEN_MAX_WIDTH 16384
+#define SCREEN_MAX_HEIGHT 16384
 
 #define MENU_MIN_WIDTH 240
 #define MENU_MAX_WIDTH 360

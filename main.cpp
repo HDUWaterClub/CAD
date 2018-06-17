@@ -97,6 +97,16 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                                 assert(startPt != NULL && endPt != NULL);
 
                                 if (node -> data -> type == DATATYPE_TEXT) {
+                                    struct Text *txt = (struct Text *)node -> data -> content;
+                                    LOGFONT cntFont = defaultFont;
+                                    cntFont.lfHeight = abs(startPt -> y - endPt -> y);
+                                    setfont(&cntFont);
+
+                                    startPt -> x = min(startPt -> x, endPt -> x);
+                                    startPt -> y = min(startPt -> y, endPt -> y);
+                                    endPt -> x = startPt -> x + textwidth(txt -> content);
+                                    endPt -> y = startPt -> y + cntFont.lfHeight;
+
                                     editText(node, startPt, endPt);
                                 } else {
                                     editShape(node, startPt, endPt);

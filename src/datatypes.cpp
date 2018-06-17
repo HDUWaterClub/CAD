@@ -75,7 +75,15 @@ bool findSegmentRule(const struct Vertex *cursorPt, const struct Segment *seg) {
         cursorPt -> y > max(seg -> leftPt -> y, seg -> rightPt-> y) + FINDRULE_VARIATION) {
             return false;
     }
-    return abs(((long long int)seg -> rightPt-> x - seg -> leftPt -> x) * cursorPt -> y - ((long long int)seg -> rightPt-> y - seg -> leftPt -> y) * cursorPt -> x - ((long long int)seg -> rightPt-> x * seg -> leftPt -> y - seg -> leftPt -> x * seg -> rightPt-> y)) <= ((long long int)seg -> rightPt-> x - seg -> leftPt -> x) * FINDRULE_VARIATION;
+
+    long long int leftVal = ((long long int)seg -> leftPt -> y - seg -> rightPt -> y) * cursorPt -> x
+                        + ((long long int)seg -> rightPt -> x - seg -> leftPt -> x) * cursorPt -> y
+                        + ((long long int)seg -> leftPt -> x * seg -> rightPt -> y - (long long int)seg -> rightPt -> x * seg -> leftPt -> y);
+    leftVal *= leftVal;
+
+    long long int rightVal = quickPow(FINDRULE_VARIATION, 2) * (quickPow(seg -> leftPt -> x - seg -> rightPt -> x, 2) + quickPow(seg -> leftPt -> y - seg -> rightPt -> y, 2));
+
+    return leftVal <= rightVal;
 }
 
 struct Rectangle * makeRectangle(struct Vertex *newLowerLeftPt, struct Vertex *newUpperRightPt) {

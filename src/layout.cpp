@@ -219,7 +219,7 @@ void drawMenu() {
 
 void init() {
     getMonitorResolution();
-    if (screenWidth < SCREEN_MIN_WIDTH || screenHeight < SCREEN_MIN_HEIGHT) {
+    if (screenWidth < SCREEN_MIN_WIDTH || screenWidth > SCREEN_MAX_WIDTH || screenHeight < SCREEN_MIN_HEIGHT || screenHeight > SCREEN_MAX_HEIGHT) {
         puts("Unsupported screen resolution");
         exit(1);
     }
@@ -294,7 +294,7 @@ void drawEditAssist(struct NodeData *nodeData) {
             struct Rectangle *pos = (struct Rectangle *)txt -> position;
             minx = pos -> lowerLeftPt -> x, miny = pos -> lowerLeftPt -> y;
             maxx = pos -> upperRightPt -> x, maxy = pos -> upperRightPt -> y;
-            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME;
             break;
         }
         default: {

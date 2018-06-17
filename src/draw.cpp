@@ -259,9 +259,6 @@ void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
               LOGFONT *font, color_t textColor, color_t fillColor) {
     assert(startPt != NULL && text != NULL && text != NULL && font != NULL);
 
-    int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
-    int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
-
     color_t prevColor = getcolor(), prevFillColor = getfillcolor();
 
     setcolor(textColor);
@@ -272,7 +269,9 @@ void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
     cntFont.lfHeight = abs(endPt -> y - startPt -> y);
 
     setfont(&cntFont);
-
+    int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
+    //int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
+    int maxx = minx + textwidth(text), maxy = miny + textheight(text);
     outtextrect(minx, miny, maxx, maxy, text);
 
     setcolor(prevColor);
