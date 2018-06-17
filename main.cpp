@@ -232,8 +232,10 @@ int textMode(struct LinkedList *list) {
             setViewPort(AREA_CANVAS);
 
             if (content != NULL) {
-                struct Vertex *endPt = drawText(startPt, content, SHAPE_DEFAULT_COLOR, BLACK);
-                saveText(list, startPt, endPt, content, cntFont.lfWidth, cntFont.lfHeight);
+                struct Vertex *endPt = getTextEndPt(startPt, content, &defaultFont);
+                drawText(startPt, endPt, content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
+
+                saveText(list, startPt, endPt, content, defaultFont.lfWidth, defaultFont.lfHeight);
             }
 
             redrawAll(list, SHAPE_DEFAULT_COLOR);

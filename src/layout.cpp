@@ -173,15 +173,11 @@ void drawMenu() {
     }
 
     int logoFontHeight = screenHeight / 10 - (paddingHeight << 1);
-    int logoFontWidth =  logoFontHeight * 21 / 50;
-    if (logoFontWidth & 1) {
-        logoFontWidth--;
-    }
     if (logoFontHeight & 1) {
         logoFontHeight--;
     }
 
-    logoFont.lfWidth = logoFontWidth;
+    logoFont.lfWidth = 0;
     logoFont.lfHeight = logoFontHeight;
     logoFont.lfWeight = FW_DEMIBOLD;
     logoFont.lfQuality = PROOF_QUALITY;
@@ -189,15 +185,11 @@ void drawMenu() {
     drawLogo(paddingWidth, screenHeight / 10, BUTTON_FILL_COLOR_INACTIVE, BUTTON_FOREGROUND_COLOR_INACTIVE);
 
     int buttonFontHeight = buttonHeight - (paddingHeight * 3 / 2);
-    int buttonFontWidth = buttonFontHeight * 21 / 50;
-    if (buttonFontWidth & 1) {
-        buttonFontWidth--;
-    }
     if (buttonFontHeight & 1) {
         buttonFontHeight--;
     }
 
-    buttonFont.lfWidth = buttonFontWidth;
+    buttonFont.lfWidth = 0;
     buttonFont.lfHeight = buttonFontHeight;
     buttonFont.lfWeight = FW_MEDIUM;
     buttonFont.lfQuality = PROOF_QUALITY;
@@ -250,11 +242,11 @@ void init() {
 
     drawMenu();
 
-    cntFont.lfWidth = buttonFont.lfWidth;
-    cntFont.lfHeight = buttonFont.lfHeight;
-    cntFont.lfWeight = FW_REGULAR;
-    cntFont.lfQuality = PROOF_QUALITY;
-    setfont(&cntFont);
+    defaultFont.lfWidth = 0;
+    defaultFont.lfHeight = buttonFont.lfHeight;
+    defaultFont.lfWeight = FW_REGULAR;
+    defaultFont.lfQuality = PROOF_QUALITY;
+    setfont(&defaultFont);
 
     // Set viewport to canvas
     setViewPort(AREA_CANVAS);
@@ -302,7 +294,7 @@ void drawEditAssist(struct NodeData *nodeData) {
             struct Rectangle *pos = (struct Rectangle *)txt -> position;
             minx = pos -> lowerLeftPt -> x, miny = pos -> lowerLeftPt -> y;
             maxx = pos -> upperRightPt -> x, maxy = pos -> upperRightPt -> y;
-            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME + EDIT_ASSIST_DRAW_MID;
+            drawConf = EDIT_ASSIST_DRAW_SIDE_SAME + EDIT_ASSIST_DRAW_SIDE_NON_SAME;
             break;
         }
         default: {

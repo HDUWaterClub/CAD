@@ -6,7 +6,7 @@
 #include "draw.h"
 #include "layout.h"
 
-LOGFONT cntFont;
+LOGFONT defaultFont;
 
 void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor) {
     color_t prevFillColor = getfillcolor();
@@ -173,8 +173,9 @@ void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *en
     assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
 
     if (text == NULL || fontWidth < 0 || fontHeight < 0) {
-        struct Text *txt = (struct Text *)node -> data;
-        text = (char *)"Heck!";
+        struct Text *txt = (struct Text *)node -> data -> content;
+        text = (char *)malloc(sizeof(char) * DATATYPE_TEXT_MAX_LENGTH);
+        strncpy(text, txt -> content, DATATYPE_TEXT_MAX_LENGTH);
         fontWidth = txt -> fontWidth;
         fontHeight = txt -> fontHeight;
     }
@@ -215,7 +216,7 @@ void drawNodeData(struct NodeData *nodeData, color_t fgColor) {
         case DATATYPE_TEXT: {
             struct Text *txt = (struct Text *)nodeData -> content;
             struct Rectangle *pos = (struct Rectangle *)txt -> position;
-            drawText(pos -> lowerLeftPt, txt -> content, fgColor, BLACK);
+            drawText(pos -> lowerLeftPt, pos -> upperRightPt, txt -> content, &defaultFont, fgColor, BLACK);
             break;
         }
         default: {
@@ -234,24 +235,45 @@ void redrawAll(struct LinkedList *list, color_t fgColor) {
     }
 }
 
-struct Vertex * drawText(struct Vertex *startPt, char *text, color_t textColor, color_t fillColor) {
+struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font) {
+    LOGFONT cntFont = *font;
+    cntFont.lfWidth = 0;
+    setfont(&cntFont);
+
+    int cntTextHeight = textheight(text);
+    int cntTextWidth = textwidth(text);
+    setfont(&defaultFont);
+
+    return makeVertex(startPt -> x + cntTextWidth, startPt -> y + cntTextHeight);
+}
+
+void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
+              LOGFONT *font, color_t textColor, color_t fillColor) {
     assert(startPt != NULL && text != NULL);
+
+    int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
+    int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
+    startPt -> x = minx;
+    startPt -> y = miny;
+    endPt -> x = maxx;
+    endPt -> y = maxy;
 
     color_t prevColor = getcolor(), prevFillColor = getfillcolor();
 
     setcolor(textColor);
     setfontbkcolor(fillColor);
+
+    LOGFONT cntFont = *font;
+    cntFont.lfWidth = 0;
+    cntFont.lfHeight = abs(endPt -> y - startPt -> y);
+
     setfont(&cntFont);
 
-    int cntTextHeight = textheight(text);
-    int cntTextWidth = textwidth(text);
-
-    outtextrect(startPt -> x, startPt -> y, cntTextWidth, cntTextHeight, text);
+    outtextrect(startPt -> x, startPt -> y, endPt -> x, endPt -> y, text);
 
     setcolor(prevColor);
     setfillcolor(prevFillColor);
-
-    return makeVertex(startPt -> x + cntTextWidth, startPt -> y + cntTextHeight);
+    setfont(&defaultFont);
 }
 
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
@@ -308,7 +330,14 @@ void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
 
         redrawAll(list, SHAPE_DEFAULT_COLOR);
         drawNodeData(data, EDIT_ASSIST_COLOR);
-        drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
+
+
+        if (data -> type == DATATYPE_TEXT) {
+            struct Text *txt = (struct Text *)data -> content;
+            drawText(*startPt, *endPt,  txt -> content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
+        } else {
+            drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
+        }
 
         if (m.is_up()) {
             return;
@@ -349,7 +378,7 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
 
         if (data -> type == DATATYPE_TEXT) {
             struct Text *txt = (struct Text *)data -> content;
-            drawText(*startPt, txt -> content, SHAPE_DEFAULT_COLOR, BLACK);
+            drawText(*startPt, *endPt, txt -> content, &defaultFont, SHAPE_DEFAULT_COLOR, BLACK);
         } else {
             drawShape(*startPt, *endPt, data -> type, SHAPE_DEFAULT_COLOR);
         }

@@ -8,7 +8,7 @@
 
 #define SHAPE_DEFAULT_COLOR WHITE
 
-extern LOGFONT cntFont;
+extern LOGFONT defaultFont;
 
 void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor);
 
@@ -24,7 +24,9 @@ void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *en
 void drawNodeData(struct NodeData *nodeData, color_t fgColor);
 void redrawAll(struct LinkedList *list, color_t fgColor);
 
-struct Vertex * drawText(struct Vertex *startPt, char *text, color_t textColor, color_t fillColor);
+struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font);
+void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
+              LOGFONT *font, color_t textColor, color_t fillColor);
 
 // Tracking functions
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
