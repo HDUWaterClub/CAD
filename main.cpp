@@ -14,11 +14,19 @@
 #include "draw.h"
 #include "layout.h"
 
+void moveItem(struct LinkedList *list, struct LinkedNode *node, int mx, int my);
+void editItem(struct LinkedList *list, struct LinkedNode *node, int assistId);
+int editMode(struct LinkedList *list, struct LinkedNode *node);
+int selectionMode(struct LinkedList *list);
+int drawMode(struct LinkedList *list, int shapeType);
+int textMode(struct LinkedList *list);
+
 int cntButtonId;
 
-void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my) {
+void moveItem(struct LinkedList *list, struct LinkedNode *node, int mx, int my) {
     struct Vertex *cursorPt = makeVertex(mx, my);
     getRealPosition(cursorPt);
+
     struct Vertex *startPt = NULL, *endPt = NULL;
     trackShape(list, node -> data, cursorPt, &startPt, &endPt);
     destroyVertex(cursorPt);
@@ -34,9 +42,34 @@ void moveShape(struct LinkedList *list, struct LinkedNode *node, int mx, int my)
     redrawAll(list, SHAPE_DEFAULT_COLOR, false);
 }
 
+void editItem(struct LinkedList *list, struct LinkedNode *node, int assistId) {
+    struct Vertex *startPt = NULL, *endPt = NULL;
+    trackEditPts(list, node -> data, assistId, &startPt, &endPt);
+    assert(startPt != NULL && endPt != NULL);
+
+    if (node -> data -> type == DATATYPE_TEXT) {
+        struct Text *txt = (struct Text *)node -> data -> content;
+        LOGFONT cntFont = defaultFont;
+        cntFont.lfHeight = abs(startPt -> y - endPt -> y);
+        setfont(&cntFont);
+
+        startPt -> x = min(startPt -> x, endPt -> x);
+        startPt -> y = min(startPt -> y, endPt -> y);
+        endPt -> x = startPt -> x + textwidth(txt -> content);
+        endPt -> y = startPt -> y + cntFont.lfHeight;
+
+        editText(node, startPt, endPt);
+    } else {
+        editShape(node, startPt, endPt);
+    }
+
+    redrawAll(list, SHAPE_DEFAULT_COLOR, false);
+}
+
 int editMode(struct LinkedList *list, struct LinkedNode *node) {
     assert(node != NULL && node -> data != NULL);
 
+    // Change "CLEAR" button to "DELETE"
     changeButtonText(BUTTON_TYPE_CLEAR, (char *)"DELETE");
     drawButton(BUTTON_TYPE_CLEAR, BUTTON_STATE_AVAILABLE);
 
@@ -57,7 +90,7 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
 
             int cntArea = whichArea(m.x);
             if (isFirst && m.is_move()) {
-                moveShape(list, node, m.x, m.y);
+                moveItem(list, node, m.x, m.y);
                 isFirst = false;
                 break;
             } else if (cntArea == AREA_MENU && m.is_down()) {
@@ -88,31 +121,11 @@ int editMode(struct LinkedList *list, struct LinkedNode *node) {
                             int assistId = getAssistId(cursorPt);
                             destroyVertex(cursorPt);
 
-                            if (assistId == -1) {
-                                moveShape(list, node, m.x, m.y);
+                            if (assistId < 0) {
+                                moveItem(list, node, m.x, m.y);
                                 break;
                             } else {
-                                struct Vertex *startPt = NULL, *endPt = NULL;
-                                trackEditPts(list, node -> data, assistId, &startPt, &endPt);
-                                assert(startPt != NULL && endPt != NULL);
-
-                                if (node -> data -> type == DATATYPE_TEXT) {
-                                    struct Text *txt = (struct Text *)node -> data -> content;
-                                    LOGFONT cntFont = defaultFont;
-                                    cntFont.lfHeight = abs(startPt -> y - endPt -> y);
-                                    setfont(&cntFont);
-
-                                    startPt -> x = min(startPt -> x, endPt -> x);
-                                    startPt -> y = min(startPt -> y, endPt -> y);
-                                    endPt -> x = startPt -> x + textwidth(txt -> content);
-                                    endPt -> y = startPt -> y + cntFont.lfHeight;
-
-                                    editText(node, startPt, endPt);
-                                } else {
-                                    editShape(node, startPt, endPt);
-                                }
-
-                                redrawAll(list, SHAPE_DEFAULT_COLOR, false);
+                                editItem(list, node, assistId);
                                 break;
                             }
                         } else if (m.is_right()) {
@@ -187,10 +200,12 @@ int drawMode(struct LinkedList *list, int shapeType) {
     assert(list != NULL);
     while (true) {
         mouse_msg m = getmouse();
+
         // Only left key clicking down matters
         if (!m.is_left() || !m.is_down()) {
             continue;
         }
+
         int cntArea = whichArea(m.x);
         if (cntArea == AREA_MENU) {
             // When user clicked left button in menu area,
@@ -206,11 +221,8 @@ int drawMode(struct LinkedList *list, int shapeType) {
             getRealPosition(startPt);
             struct Vertex *endPt = trackEndPt(list, startPt, shapeType, SHAPE_DEFAULT_COLOR, SHAPE_DEFAULT_COLOR);
 
-            //struct LinkedNode * newNode = saveShape(list, startPt, endPt, shapeType);
             saveShape(list, startPt, endPt, shapeType);
             redrawAll(list, SHAPE_DEFAULT_COLOR, false);
-            break;
-            //return editMode(list, newNode);
         }
     }
     return cntButtonId;
@@ -236,9 +248,12 @@ int textMode(struct LinkedList *list) {
             struct Vertex *startPt = makeVertex(m.x, m.y);
             getRealPosition(startPt);
 
+            // Prompt user for inputing text
             char *content = (char *)malloc(sizeof(char) * DATATYPE_TEXT_MAX_LENGTH);
             setViewPort(AREA_ALL);
-            while (inputbox_getline((char *)"Add Text", (char *)"Please leave something here and press ENTER.\nLeave it blank to exit...", content, DATATYPE_TEXT_MAX_LENGTH) == 0) {
+            while (inputbox_getline((char *)"Add Text",
+                                    (char *)"Please leave something here and press ENTER.\nLeave it blank to exit...",
+                                    content, DATATYPE_TEXT_MAX_LENGTH) == 0) {
                 if (strlen(content) == 0) {
                     free(content);
                     content = NULL;
@@ -247,13 +262,13 @@ int textMode(struct LinkedList *list) {
             }
             setViewPort(AREA_CANVAS);
 
+            // Save text
             if (content != NULL) {
                 struct Vertex *endPt = getTextEndPt(startPt, content, &defaultFont);
                 drawText(startPt, endPt, content, &defaultFont, SHAPE_DEFAULT_COLOR, CANVAS_COLOR);
                 saveText(list, startPt, endPt, content, defaultFont.lfWidth, defaultFont.lfHeight);
+                redrawAll(list, SHAPE_DEFAULT_COLOR, false);
             }
-
-            redrawAll(list, SHAPE_DEFAULT_COLOR, false);
         }
     }
     return cntButtonId;

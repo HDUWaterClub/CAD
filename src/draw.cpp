@@ -8,13 +8,6 @@
 
 LOGFONT defaultFont;
 
-void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor) {
-    color_t prevFillColor = getfillcolor();
-    setfillcolor(fillColor);
-    bar(minx, maxy, maxx, miny);
-    setfillcolor(prevFillColor);
-}
-
 void getRealPosition(struct Vertex *cntPt) {
     assert(cntPt != NULL);
     int cntCanvasMinx = -1, cntCanvasMiny = -1, cntCanvasMaxx = -1, cntCanvasMaxy = -1;
@@ -23,6 +16,140 @@ void getRealPosition(struct Vertex *cntPt) {
 
     cntPt -> x -= cntCanvasMinx;
     cntPt -> y -= cntCanvasMiny;
+}
+
+void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
+    assert(data != NULL && *startPt == NULL && *endPt == NULL);
+
+    if (assistId == -1) {
+        if (data -> type == DATATYPE_CIRCLE) {
+            assistId = 2;
+        } else {
+            assistId = 0;
+        }
+    }
+
+    const int xType = assistId / 3, yType = assistId % 3;
+    int startPtx, startPty;
+    int endPtx = editAssistArr[assistId].x, endPty = editAssistArr[assistId].y;
+
+    switch (data -> type) {
+        case DATATYPE_SEGMENT: {
+            struct Segment *seg = (struct Segment *)data -> content;
+            if (xType == 0) {
+                startPtx = seg -> rightPt -> x;
+                startPty = seg -> rightPt -> y;
+            } else {
+                startPtx = seg -> leftPt -> x;
+                startPty = seg -> leftPt -> y;
+            }
+            break;
+        }
+        case DATATYPE_RECTANGLE: {
+            struct Rectangle *rec = (struct Rectangle *)data -> content;
+
+            if (xType == 0) {
+                startPtx = rec -> upperRightPt -> x;
+            } else {
+                startPtx = rec -> lowerLeftPt -> x;
+                if (xType == 2) {
+                    endPtx = rec -> upperRightPt -> x;
+                }
+            }
+            if (yType == 0) {
+                startPty = rec -> upperRightPt -> y;
+            } else {
+                startPty = rec -> lowerLeftPt -> y;
+                if (yType == 2) {
+                    endPty = rec -> upperRightPt -> y;
+                }
+            }
+            break;
+        }
+        case DATATYPE_CIRCLE: {
+            struct Circle *cir = (struct Circle *)data -> content;
+
+            if (xType == 2) {
+                startPtx = endPtx;
+                if (yType == 0) {
+                    startPty = endPty + cir -> radius * 2;
+                } else {
+                    startPty = endPty - cir -> radius * 2;
+                }
+            }
+            if (yType == 2) {
+                if (xType == 0) {
+                    startPtx = endPtx + cir -> radius * 2;
+                } else {
+                    startPtx = endPtx - cir -> radius * 2;
+                }
+                startPty = endPty;
+            }
+            break;
+        }
+        case DATATYPE_ELLIPSE: {
+            struct Ellipse *elp = (struct Ellipse *)data -> content;
+
+            if (xType == 0) {
+                startPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
+            } else {
+                startPtx = elp -> centerPt -> x - elp -> majorSemiAxis;
+                if (xType == 2) {
+                    endPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
+                }
+            }
+            if (yType == 0) {
+                startPty = elp -> centerPt -> y + elp -> minorSemiAxis;
+            } else {
+                startPty = elp -> centerPt -> y - elp -> minorSemiAxis;
+                if (yType == 2) {
+                    endPty = elp -> centerPt -> y + elp -> minorSemiAxis;
+                }
+            }
+
+            break;
+        }
+        case DATATYPE_TEXT: {
+            struct Text *txt = (struct Text *)data -> content;
+            struct Rectangle *pos = (struct Rectangle *)txt -> position;
+
+            if (xType == 0) {
+                startPtx = pos -> upperRightPt -> x;
+            } else {
+                startPtx = pos -> lowerLeftPt -> x;
+                if (xType == 2) {
+                    endPtx = pos -> upperRightPt -> x;
+                }
+            }
+            if (yType == 0) {
+                startPty = pos -> upperRightPt -> y;
+            } else {
+                startPty = pos -> lowerLeftPt -> y;
+                if (yType == 2) {
+                    endPty = pos -> upperRightPt -> y;
+                }
+            }
+            break;
+        }
+        default: {
+            return;
+        }
+    }
+
+    *startPt = makeVertex(startPtx, startPty);
+    *endPt = makeVertex(endPtx, endPty);
+}
+
+struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font) {
+    LOGFONT cntFont = *font;
+    cntFont.lfWidth = 0;
+    setfont(&cntFont);
+
+    int cntTextHeight = textheight(text);
+    int cntTextWidth = textwidth(text);
+    setfont(&defaultFont);
+
+    return makeVertex(startPt -> x + cntTextWidth, startPt -> y + cntTextHeight);
 }
 
 void drawShape(struct Vertex *startPt, struct Vertex *endPt, int shapeType, color_t fgColor) {
@@ -114,11 +241,6 @@ struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, st
     return NULL;
 }
 
-struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight) {
-    struct LinkedNode *res = addNodeAtTail(list, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT));
-    return res;
-}
-
 void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt) {
     assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
 
@@ -168,6 +290,35 @@ void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *e
     destroyVertex(endPt);
 }
 
+void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
+              LOGFONT *font, color_t textColor, color_t fillColor) {
+    assert(startPt != NULL && text != NULL && text != NULL && font != NULL);
+
+    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
+
+    setcolor(textColor);
+    setfontbkcolor(fillColor);
+
+    LOGFONT cntFont = *font;
+    cntFont.lfWidth = 0;
+    cntFont.lfHeight = abs(endPt -> y - startPt -> y);
+
+    setfont(&cntFont);
+    int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
+    //int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
+    int maxx = minx + textwidth(text), maxy = miny + textheight(text);
+    outtextrect(minx, miny, maxx, maxy, text);
+
+    setcolor(prevColor);
+    setfillcolor(prevFillColor);
+    setfont(&defaultFont);
+}
+
+struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight) {
+    struct LinkedNode *res = addNodeAtTail(list, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT));
+    return res;
+}
+
 void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt,
               char *text, int fontWidth, int fontHeight) {
     assert(node != NULL && node -> data != NULL && startPt != NULL && endPt != NULL);
@@ -185,6 +336,13 @@ void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *en
     }
 
     editNode(node, makeData(makeText(makeRectangle(startPt, endPt), text, fontWidth, fontHeight), DATATYPE_TEXT), destroyRule);
+}
+
+void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor) {
+    color_t prevFillColor = getfillcolor();
+    setfillcolor(fillColor);
+    bar(minx, maxy, maxx, miny);
+    setfillcolor(prevFillColor);
 }
 
 void drawNodeData(struct NodeData *nodeData, color_t fgColor, bool isDraft) {
@@ -241,42 +399,6 @@ void redrawAll(struct LinkedList *list, color_t fgColor, bool isDraft) {
         drawNodeData(cntNode -> data, fgColor, isDraft);
         cntNode = cntNode -> next;
     }
-}
-
-struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font) {
-    LOGFONT cntFont = *font;
-    cntFont.lfWidth = 0;
-    setfont(&cntFont);
-
-    int cntTextHeight = textheight(text);
-    int cntTextWidth = textwidth(text);
-    setfont(&defaultFont);
-
-    return makeVertex(startPt -> x + cntTextWidth, startPt -> y + cntTextHeight);
-}
-
-void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
-              LOGFONT *font, color_t textColor, color_t fillColor) {
-    assert(startPt != NULL && text != NULL && text != NULL && font != NULL);
-
-    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
-
-    setcolor(textColor);
-    setfontbkcolor(fillColor);
-
-    LOGFONT cntFont = *font;
-    cntFont.lfWidth = 0;
-    cntFont.lfHeight = abs(endPt -> y - startPt -> y);
-
-    setfont(&cntFont);
-    int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
-    //int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
-    int maxx = minx + textwidth(text), maxy = miny + textheight(text);
-    outtextrect(minx, miny, maxx, maxy, text);
-
-    setcolor(prevColor);
-    setfillcolor(prevFillColor);
-    setfont(&defaultFont);
 }
 
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,

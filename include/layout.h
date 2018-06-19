@@ -1,25 +1,25 @@
 #ifndef LAYOUT_H_
 #define LAYOUT_H_
 
-#include "draw.h"
+#include "datatypes.h"
 
-// Area
+/* Area */
+
 #define AREA_MENU 0
 #define AREA_CANVAS 1
 #define AREA_ALL 2
 
-// Button
-#define BUTTON_NUMBER 7
-#define BUTTON_TEXT_LENGTH 127
+/* Button */
 
-#define BUTTON_STATE_AVAILABLE 1
-#define BUTTON_STATE_ACTIVE 2
-
+// Colors
 #define BUTTON_FILL_COLOR_ACTIVE EGERGB(40, 40, 40)
 #define BUTTON_FILL_COLOR_INACTIVE EGERGB(56, 56, 56)
 #define BUTTON_FOREGROUND_COLOR_ACTIVE EGERGB(255, 255, 255)
 #define BUTTON_FOREGROUND_COLOR_INACTIVE EGERGB(245, 245, 245)
 
+// States and types
+#define BUTTON_STATE_AVAILABLE 1
+#define BUTTON_STATE_ACTIVE 2
 #define BUTTON_TYPE_SEGMENT 0
 #define BUTTON_TYPE_RECTANGLE 1
 #define BUTTON_TYPE_CIRCLE 2
@@ -30,27 +30,44 @@
 #define BUTTON_NON_ACTIVE 7
 #define BUTTON_NON_CHANGED 8
 
+// Number and length
+#define BUTTON_NUMBER 7
+#define BUTTON_TEXT_LENGTH 127
+
+/* Canvas */
+
+// Color
+#define CANVAS_COLOR BLACK
+
+/* Edit Assist */
+
+// Color
+#define EDIT_ASSIST_COLOR EGERGB(169, 169, 169)
+
+// Configurations
+#define EDIT_ASSIST_DRAW_SIDE_SAME 1
+#define EDIT_ASSIST_DRAW_SIDE_NON_SAME 2
+#define EDIT_ASSIST_DRAW_MID 4
+
+// Number and radius
+#define EDIT_ASSIST_MAX_NUM 8
+#define EDIT_ASSIST_RADIUS 5
+
+/* Menu */
+
+// Color
+#define MENU_BACKGROUND_COLOR EGERGB(56, 56, 56)
+
+// Width
+#define MENU_MIN_WIDTH 240
+
+/* Screen */
+
 // Width and height
 #define SCREEN_MIN_WIDTH 640
 #define SCREEN_MIN_HEIGHT 480
 #define SCREEN_MAX_WIDTH 16384
 #define SCREEN_MAX_HEIGHT 16384
-
-#define MENU_MIN_WIDTH 240
-#define MENU_MAX_WIDTH 360
-#define MENU_BACKGROUND_COLOR EGERGB(56, 56, 56)
-
-#define EDIT_ASSIST_MAX_NUM 8
-#define EDIT_ASSIST_COLOR EGERGB(169, 169, 169)
-#define EDIT_ASSIST_RADIUS 5
-
-#define EDIT_ASSIST_MAX_NUM 8
-
-#define EDIT_ASSIST_DRAW_SIDE_SAME 1
-#define EDIT_ASSIST_DRAW_SIDE_NON_SAME 2
-#define EDIT_ASSIST_DRAW_MID 4
-
-#define CANVAS_COLOR BLACK
 
 struct Button {
     bool isAvailable;
@@ -63,26 +80,25 @@ extern int menuWidth, canvasWidth;
 extern int paddingWidth, paddingHeight;
 extern struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
 
-void printLog(char *str);
-
-void clearCanvas();
-
+/* Area and view port */
 int getViewPort();
 void setViewPort(int areaId);
-
-bool isInRec(int x, int y, int x1, int y1, int x2, int y2);
 int whichArea(int x);
+
+/* Button */
 int getButtonId(int x, int y);
-
-void drawButton(int buttonId, int state);
 void changeButtonText(int buttonId, char *text);
+void drawButton(int buttonId, int state);
 
-void init();
+/* Canvas */
+void clearCanvas();
 
-void drawEditAssist(struct NodeData *nodeData);
+/* Edit Assist */
 bool isInAssistArea(struct Vertex *cursorPt);
-void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = -1);
-
 int getAssistId(struct Vertex *cursorPt);
+void drawEditAssist(struct NodeData *nodeData);
+
+/* Initialization */
+void init();
 
 #endif

@@ -4,13 +4,11 @@
 
 #include "windows.h"
 
-#include "datatypes.h"
 #include "distance.h"
 #include "draw.h"
 #include "layout.h"
 
 struct Button btnArr[BUTTON_NUMBER];
-
 struct Vertex editAssistArr[EDIT_ASSIST_MAX_NUM];
 
 int screenWidth, screenHeight;
@@ -19,11 +17,7 @@ int paddingWidth, paddingHeight;
 
 LOGFONT buttonFont, logoFont;
 
-void printLog(char *str) {
-    MessageBox(NULL, str, "FUCK", MB_OK | MB_SYSTEMMODAL);
-}
-
-void getMonitorResolution() {
+void initMonitorResolution() {
     screenWidth = GetSystemMetrics(SM_CXSCREEN);
     screenHeight = GetSystemMetrics(SM_CYSCREEN);
 }
@@ -56,13 +50,6 @@ void setViewPort(int areaId) {
     }
 }
 
-void clearCanvas() {
-    int prevViewPort = getViewPort();
-    setViewPort(AREA_CANVAS);
-    fillBlock(0, 0, canvasWidth, screenHeight, CANVAS_COLOR);
-    setViewPort(prevViewPort);
-}
-
 bool isInRec(int x, int y, int x1, int y1, int x2, int y2) {
     int minx = min(x1, x2), miny = min(y1, y2);
     int maxx = max(x1, x2), maxy = max(y1, y2);
@@ -86,6 +73,11 @@ int getButtonId(int x, int y) {
         }
     }
     return BUTTON_NON_CHANGED;
+}
+
+void changeButtonText(int buttonId, char text[BUTTON_TEXT_LENGTH]) {
+    assert(buttonId >= 0 && buttonId < BUTTON_NUMBER && text != NULL);
+    strncpy(btnArr[buttonId].text, text, sizeof(btnArr[buttonId].text));
 }
 
 void drawButton(int buttonId, int state) {
@@ -134,124 +126,33 @@ void drawButton(int buttonId, int state) {
     setViewPort(prevViewPort);
 }
 
-void changeButtonText(int buttonId, char text[BUTTON_TEXT_LENGTH]) {
-    assert(buttonId >= 0 && buttonId < BUTTON_NUMBER && text != NULL);
-    strncpy(btnArr[buttonId].text, text, sizeof(btnArr[buttonId].text));
-}
-
-void drawLogo(int minx, int miny, color_t fillColor, color_t textColor) {
-    int prevViewPort = getViewPort();
-    setViewPort(AREA_MENU);
-
-    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
-
-    setcolor(textColor);
-    setfillcolor(fillColor);
-    setfontbkcolor(fillColor);
-
-    setfont(&logoFont);
-    outtextxy(minx, miny, "CADET");
-
-    setcolor(prevColor);
-    setfillcolor(prevFillColor);
-
-    setViewPort(prevViewPort);
-}
-
-void drawMenu() {
-    int prevViewPort = getViewPort();
-    setViewPort(AREA_MENU);
-
-    fillBlock(0, 0, menuWidth, screenHeight, MENU_BACKGROUND_COLOR);
-
-    int buttonWidth = menuWidth - (paddingWidth << 1);
-    int buttonHeight = screenHeight / 10 - (paddingHeight << 1);
-    if (buttonWidth & 1) {
-        buttonWidth++;
-    }
-    if (buttonHeight & 1) {
-        buttonHeight++;
-    }
-
-    int logoFontHeight = screenHeight / 10 - (paddingHeight << 1);
-    if (logoFontHeight & 1) {
-        logoFontHeight--;
-    }
-
-    logoFont.lfWidth = 0;
-    logoFont.lfHeight = logoFontHeight;
-    logoFont.lfWeight = FW_SEMIBOLD;
-    logoFont.lfQuality = PROOF_QUALITY;
-
-    drawLogo(paddingWidth, screenHeight / 10, BUTTON_FILL_COLOR_INACTIVE, BUTTON_FOREGROUND_COLOR_INACTIVE);
-
-    int buttonFontHeight = buttonHeight - (paddingHeight * 3 / 2);
-    if (buttonFontHeight & 1) {
-        buttonFontHeight--;
-    }
-
-    buttonFont.lfWidth = 0;
-    buttonFont.lfHeight = buttonFontHeight;
-    buttonFont.lfWeight = FW_MEDIUM;
-    buttonFont.lfQuality = PROOF_QUALITY;
-
-    snprintf(btnArr[0].text, sizeof(btnArr[0].text), "SEGMENT");
-    snprintf(btnArr[1].text, sizeof(btnArr[1].text), "RECTANGLE");
-    snprintf(btnArr[2].text, sizeof(btnArr[2].text), "CIRCLE");
-    snprintf(btnArr[3].text, sizeof(btnArr[3].text), "ELLIPSE");
-    snprintf(btnArr[4].text, sizeof(btnArr[4].text), "TEXT");
-    snprintf(btnArr[5].text, sizeof(btnArr[5].text), "CLEAR");
-    snprintf(btnArr[6].text, sizeof(btnArr[6].text), "EXIT");
-
-    for (int i = 0; i < BUTTON_NUMBER; i++) {
-        btnArr[i].isAvailable = true;
-        btnArr[i].minx = paddingWidth;
-        btnArr[i].miny = screenHeight * (i + 2) / 10 + paddingHeight;
-        btnArr[i].width = buttonWidth;
-        btnArr[i].height = buttonHeight;
-
-        if (btnArr[i].isAvailable) {
-            drawButton(i, BUTTON_STATE_AVAILABLE);
+bool isInAssistArea(struct Vertex *cursorPt) {
+    assert(cursorPt != NULL);
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
+            struct Circle *cir = makeCircle(&editAssistArr[i], EDIT_ASSIST_RADIUS);
+            bool res = findCircleRule(cursorPt, cir);
+            destoryCircle(cir);
+            if (res) {
+                return res;
+            }
         }
     }
-
-    setViewPort(prevViewPort);
+    return false;
 }
 
-void init() {
-    getMonitorResolution();
-    if (screenWidth < SCREEN_MIN_WIDTH || screenWidth > SCREEN_MAX_WIDTH || screenHeight < SCREEN_MIN_HEIGHT || screenHeight > SCREEN_MAX_HEIGHT) {
-        puts("Unsupported screen resolution");
-        exit(1);
-    }
-    setinitmode(INIT_NOBORDER, 0, 0);
-    initgraph(screenWidth, screenHeight);
-
-     // Boring calculations
-    menuWidth = screenWidth / 4;
-    menuWidth = min(menuWidth, MENU_MAX_WIDTH);
-    menuWidth = max(menuWidth, MENU_MIN_WIDTH);
-    if (menuWidth & 1) {
-        if (screenWidth & 3) {
-            menuWidth++;
-        } else {
-            menuWidth--;
+int getAssistId(struct Vertex *cursorPt) {
+    int assistId = -1, minManhattanDistance = INT_MAX;
+    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
+        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
+            int cntManhattanDistance = getManhattanDistance(cursorPt, &editAssistArr[i]);
+            if (cntManhattanDistance <= FINDRULE_VARIATION && cntManhattanDistance <= minManhattanDistance) {
+                minManhattanDistance = cntManhattanDistance;
+                assistId = i;
+            }
         }
     }
-    canvasWidth = screenWidth - menuWidth;
-    paddingWidth = menuWidth / 10, paddingHeight = screenHeight / 50;
-
-    drawMenu();
-
-    defaultFont.lfWidth = 0;
-    defaultFont.lfHeight = buttonFont.lfHeight;
-    defaultFont.lfWeight = FW_REGULAR;
-    defaultFont.lfQuality = PROOF_QUALITY;
-    setfont(&defaultFont);
-
-    // Set viewport to canvas
-    clearCanvas();
-    setViewPort(AREA_CANVAS);
+    return assistId;
 }
 
 void drawEditAssist(struct NodeData *nodeData) {
@@ -358,153 +259,123 @@ void drawEditAssist(struct NodeData *nodeData) {
     setcolor(prevFillColor);
 }
 
-bool isInAssistArea(struct Vertex *cursorPt) {
-    assert(cursorPt != NULL);
-    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
-        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
-            struct Circle *cir = makeCircle(&editAssistArr[i], EDIT_ASSIST_RADIUS);
-            bool res = findCircleRule(cursorPt, cir);
-            destoryCircle(cir);
-            if (res) {
-                return res;
-            }
-        }
-    }
-    return false;
+void clearCanvas() {
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_CANVAS);
+    fillBlock(0, 0, canvasWidth, screenHeight, CANVAS_COLOR);
+    setViewPort(prevViewPort);
 }
 
-void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId) {
-    assert(data != NULL && *startPt == NULL && *endPt == NULL);
+void drawLogo(int minx, int miny, color_t fillColor, color_t textColor) {
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_MENU);
 
-    if (assistId == -1) {
-        if (data -> type == DATATYPE_CIRCLE) {
-            assistId = 2;
+    color_t prevColor = getcolor(), prevFillColor = getfillcolor();
+
+    setcolor(textColor);
+    setfillcolor(fillColor);
+    setfontbkcolor(fillColor);
+
+    setfont(&logoFont);
+    outtextxy(minx, miny, "CADET");
+
+    setcolor(prevColor);
+    setfillcolor(prevFillColor);
+
+    setViewPort(prevViewPort);
+}
+
+void drawMenu() {
+    int prevViewPort = getViewPort();
+    setViewPort(AREA_MENU);
+
+    fillBlock(0, 0, menuWidth, screenHeight, MENU_BACKGROUND_COLOR);
+
+    int buttonWidth = menuWidth - (paddingWidth << 1);
+    int buttonHeight = screenHeight / 10 - (paddingHeight << 1);
+    if (buttonWidth & 1) {
+        buttonWidth++;
+    }
+    if (buttonHeight & 1) {
+        buttonHeight++;
+    }
+
+    int logoFontHeight = screenHeight / 10 - (paddingHeight << 1);
+    if (logoFontHeight & 1) {
+        logoFontHeight--;
+    }
+
+    logoFont.lfWidth = 0;
+    logoFont.lfHeight = logoFontHeight;
+    logoFont.lfWeight = FW_SEMIBOLD;
+    logoFont.lfQuality = PROOF_QUALITY;
+
+    drawLogo(paddingWidth, screenHeight / 10, BUTTON_FILL_COLOR_INACTIVE, BUTTON_FOREGROUND_COLOR_INACTIVE);
+
+    int buttonFontHeight = buttonHeight - (paddingHeight * 3 / 2);
+    if (buttonFontHeight & 1) {
+        buttonFontHeight--;
+    }
+
+    buttonFont.lfWidth = 0;
+    buttonFont.lfHeight = buttonFontHeight;
+    buttonFont.lfWeight = FW_MEDIUM;
+    buttonFont.lfQuality = PROOF_QUALITY;
+
+    snprintf(btnArr[0].text, sizeof(btnArr[0].text), "SEGMENT");
+    snprintf(btnArr[1].text, sizeof(btnArr[1].text), "RECTANGLE");
+    snprintf(btnArr[2].text, sizeof(btnArr[2].text), "CIRCLE");
+    snprintf(btnArr[3].text, sizeof(btnArr[3].text), "ELLIPSE");
+    snprintf(btnArr[4].text, sizeof(btnArr[4].text), "TEXT");
+    snprintf(btnArr[5].text, sizeof(btnArr[5].text), "CLEAR");
+    snprintf(btnArr[6].text, sizeof(btnArr[6].text), "EXIT");
+
+    for (int i = 0; i < BUTTON_NUMBER; i++) {
+        btnArr[i].isAvailable = true;
+        btnArr[i].minx = paddingWidth;
+        btnArr[i].miny = screenHeight * (i + 2) / 10 + paddingHeight;
+        btnArr[i].width = buttonWidth;
+        btnArr[i].height = buttonHeight;
+
+        if (btnArr[i].isAvailable) {
+            drawButton(i, BUTTON_STATE_AVAILABLE);
+        }
+    }
+
+    setViewPort(prevViewPort);
+}
+
+void init() {
+    initMonitorResolution();
+    if (screenWidth < SCREEN_MIN_WIDTH || screenWidth > SCREEN_MAX_WIDTH || screenHeight < SCREEN_MIN_HEIGHT || screenHeight > SCREEN_MAX_HEIGHT) {
+        puts("Unsupported screen resolution");
+        exit(1);
+    }
+    setinitmode(INIT_NOBORDER, 0, 0);
+    initgraph(screenWidth, screenHeight);
+
+     // Boring calculations
+    menuWidth = screenWidth / 5;
+    menuWidth = max(menuWidth, MENU_MIN_WIDTH);
+    if (menuWidth & 1) {
+        if (screenWidth & 3) {
+            menuWidth++;
         } else {
-            assistId = 0;
+            menuWidth--;
         }
     }
+    canvasWidth = screenWidth - menuWidth;
+    paddingWidth = menuWidth / 10, paddingHeight = screenHeight / 50;
 
-    const int xType = assistId / 3, yType = assistId % 3;
-    int startPtx, startPty;
-    int endPtx = editAssistArr[assistId].x, endPty = editAssistArr[assistId].y;
+    drawMenu();
 
-    switch (data -> type) {
-        case DATATYPE_SEGMENT: {
-            struct Segment *seg = (struct Segment *)data -> content;
-            if (xType == 0) {
-                startPtx = seg -> rightPt -> x;
-                startPty = seg -> rightPt -> y;
-            } else {
-                startPtx = seg -> leftPt -> x;
-                startPty = seg -> leftPt -> y;
-            }
-            break;
-        }
-        case DATATYPE_RECTANGLE: {
-            struct Rectangle *rec = (struct Rectangle *)data -> content;
+    defaultFont.lfWidth = 0;
+    defaultFont.lfHeight = buttonFont.lfHeight;
+    defaultFont.lfWeight = FW_REGULAR;
+    defaultFont.lfQuality = PROOF_QUALITY;
+    setfont(&defaultFont);
 
-            if (xType == 0) {
-                startPtx = rec -> upperRightPt -> x;
-            } else {
-                startPtx = rec -> lowerLeftPt -> x;
-                if (xType == 2) {
-                    endPtx = rec -> upperRightPt -> x;
-                }
-            }
-            if (yType == 0) {
-                startPty = rec -> upperRightPt -> y;
-            } else {
-                startPty = rec -> lowerLeftPt -> y;
-                if (yType == 2) {
-                    endPty = rec -> upperRightPt -> y;
-                }
-            }
-            break;
-        }
-        case DATATYPE_CIRCLE: {
-            struct Circle *cir = (struct Circle *)data -> content;
-
-            if (xType == 2) {
-                startPtx = endPtx;
-                if (yType == 0) {
-                    startPty = endPty + cir -> radius * 2;
-                } else {
-                    startPty = endPty - cir -> radius * 2;
-                }
-            }
-            if (yType == 2) {
-                if (xType == 0) {
-                    startPtx = endPtx + cir -> radius * 2;
-                } else {
-                    startPtx = endPtx - cir -> radius * 2;
-                }
-                startPty = endPty;
-            }
-            break;
-        }
-        case DATATYPE_ELLIPSE: {
-            struct Ellipse *elp = (struct Ellipse *)data -> content;
-
-            if (xType == 0) {
-                startPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
-            } else {
-                startPtx = elp -> centerPt -> x - elp -> majorSemiAxis;
-                if (xType == 2) {
-                    endPtx = elp -> centerPt -> x + elp -> majorSemiAxis;
-                }
-            }
-            if (yType == 0) {
-                startPty = elp -> centerPt -> y + elp -> minorSemiAxis;
-            } else {
-                startPty = elp -> centerPt -> y - elp -> minorSemiAxis;
-                if (yType == 2) {
-                    endPty = elp -> centerPt -> y + elp -> minorSemiAxis;
-                }
-            }
-
-            break;
-        }
-        case DATATYPE_TEXT: {
-            struct Text *txt = (struct Text *)data -> content;
-            struct Rectangle *pos = (struct Rectangle *)txt -> position;
-
-            if (xType == 0) {
-                startPtx = pos -> upperRightPt -> x;
-            } else {
-                startPtx = pos -> lowerLeftPt -> x;
-                if (xType == 2) {
-                    endPtx = pos -> upperRightPt -> x;
-                }
-            }
-            if (yType == 0) {
-                startPty = pos -> upperRightPt -> y;
-            } else {
-                startPty = pos -> lowerLeftPt -> y;
-                if (yType == 2) {
-                    endPty = pos -> upperRightPt -> y;
-                }
-            }
-            break;
-        }
-        default: {
-            return;
-        }
-    }
-
-    *startPt = makeVertex(startPtx, startPty);
-    *endPt = makeVertex(endPtx, endPty);
-}
-
-int getAssistId(struct Vertex *cursorPt) {
-    int assistId = -1, minManhattanDistance = INT_MAX;
-    for (int i = 0; i < EDIT_ASSIST_MAX_NUM; i++) {
-        if (editAssistArr[i].x >= 0 && editAssistArr[i].y >= 0) {
-            int cntManhattanDistance = getManhattanDistance(cursorPt, &editAssistArr[i]);
-            if (cntManhattanDistance <= FINDRULE_VARIATION && cntManhattanDistance <= minManhattanDistance) {
-                minManhattanDistance = cntManhattanDistance;
-                assistId = i;
-            }
-        }
-    }
-    return assistId;
+    // Set viewport to canvas
+    clearCanvas();
+    setViewPort(AREA_CANVAS);
 }

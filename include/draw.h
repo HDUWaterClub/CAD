@@ -10,25 +10,30 @@
 
 extern LOGFONT defaultFont;
 
-void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor);
-
+/* Position */
 void getRealPosition(struct Vertex *cntPt);
+void getStartEndPts(struct NodeData *data, struct Vertex **startPt, struct Vertex **endPt, int assistId = -1);
+struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font);
 
-// Draw functions
+/* Drawing */
+// Shape
 void drawShape(struct Vertex *startPt, struct Vertex *endPt, int shapeType, color_t fgColor);
 struct LinkedNode *saveShape(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, int shapeType);
-struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight);
 void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt);
+
+// Text
+void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
+              LOGFONT *font, color_t textColor, color_t fillColor);
+struct LinkedNode *saveText(struct LinkedList *list, struct Vertex *startPt, struct Vertex *endPt, char *text, int fontWidth, int fontHeight);
 void editText(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *endPt,
               char *text = NULL, int fontWidth = -1, int fontHeight = -1);
+
+// Universal
+void fillBlock(int minx, int maxy, int maxx, int miny, int fillColor);
 void drawNodeData(struct NodeData *nodeData, color_t fgColor, bool isDraft);
 void redrawAll(struct LinkedList *list, color_t fgColor, bool isDraft);
 
-struct Vertex * getTextEndPt(struct Vertex *startPt, char *text, LOGFONT *font);
-void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
-              LOGFONT *font, color_t textColor, color_t fillColor);
-
-// Tracking functions
+/* Tracking */
 struct Vertex * trackEndPt(struct LinkedList *list, struct Vertex *startPt,
                         int shapeType, color_t newFgColor, color_t drawnFgColor);
 void trackEditPts(struct LinkedList *list, struct NodeData *data, int assistId,
