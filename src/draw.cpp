@@ -292,7 +292,7 @@ void editShape(struct LinkedNode *node, struct Vertex *startPt, struct Vertex *e
 
 void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
               LOGFONT *font, color_t textColor, color_t fillColor) {
-    assert(startPt != NULL && text != NULL && text != NULL && font != NULL);
+    assert(startPt != NULL && text != NULL && font != NULL);
 
     color_t prevColor = getcolor(), prevFillColor = getfillcolor();
 
@@ -305,9 +305,7 @@ void drawText(struct Vertex *startPt, struct Vertex *endPt, char *text,
 
     setfont(&cntFont);
     int minx = min(startPt -> x, endPt -> x), miny = min(startPt -> y, endPt -> y);
-    //int maxx = max(startPt -> x, endPt -> x), maxy = max(startPt -> y, endPt -> y);
-    int maxx = minx + textwidth(text), maxy = miny + textheight(text);
-    outtextrect(minx, miny, maxx, maxy, text);
+    outtextxy(minx, miny, text);
 
     setcolor(prevColor);
     setfillcolor(prevFillColor);
@@ -486,7 +484,7 @@ void trackShape(struct LinkedList *list, struct NodeData *data, struct Vertex *c
         mouse_msg m = getmouse();
 
         if (whichArea(m.x) == AREA_MENU) {
-            break;
+            return;
         }
 
         int prevx = cursorPt -> x, prevy = cursorPt -> y;

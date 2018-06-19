@@ -24,6 +24,7 @@ int textMode(struct LinkedList *list);
 int cntButtonId;
 
 void moveItem(struct LinkedList *list, struct LinkedNode *node, int mx, int my) {
+    assert(list != NULL && node != NULL && node -> data != NULL);
     struct Vertex *cursorPt = makeVertex(mx, my);
     getRealPosition(cursorPt);
 
